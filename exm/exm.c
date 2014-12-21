@@ -30,7 +30,7 @@
 #include "uthash.h"
 #include "exm.h"
 
-extern void *__libc_malloc(size_t size);
+extern void *__libc_malloc (size_t size);
 static void exm_init (void) __attribute__ ((constructor));
 static void exm_finalize (void) __attribute__ ((destructor));
 static void *(*exm_hook) (size_t);
@@ -53,7 +53,7 @@ static int READY = -1;
 
 /* NOTES
  *
- * Xmem uses well-known methods to overload various memory allocation functions
+ * Exm uses well-known methods to overload various memory allocation functions
  * such that allocations above a threshold use memory mapped files. The library
  * maintains a mapping of allocated addresses and corresponding backing files
  * and cleans up files as they are de-allocated.  The idea is to help programs
@@ -66,7 +66,7 @@ static int READY = -1;
  * is to keep things as minimal as possible.
  */
 
-/* Xmem initialization
+/* Exm initialization
  *
  * Initializes synchronizing lock variable and address/file key/value map.
  * This function may be called multiple times, be aware of that and keep
@@ -82,19 +82,20 @@ static void
 exm_init ()
 {
 #ifdef DEBUG
-write(2,"INIT \n",6);
+  write (2, "INIT \n", 6);
 #endif
-  if(READY < 0)
-  {
-    omp_init_nest_lock (&lock);
-    READY=1;
-  }
-  if(!exm_hook) exm_hook = __libc_malloc;
-  if(!exm_default_free) exm_default_free =
-    (void *(*)(void *)) dlsym (RTLD_NEXT, "free");
+  if (READY < 0)
+    {
+      omp_init_nest_lock (&lock);
+      READY = 1;
+    }
+  if (!exm_hook)
+    exm_hook = __libc_malloc;
+  if (!exm_default_free)
+    exm_default_free = (void *(*)(void *)) dlsym (RTLD_NEXT, "free");
 }
 
-/* Xmem finalization
+/* Exm finalization
  * Remove any left over allocations, but we don't destroy the lock--XXX
  */
 static void
@@ -104,27 +105,27 @@ exm_finalize ()
   pid_t pid;
   omp_set_nest_lock (&lock);
   READY = 0;
-  HASH_ITER(hh, flexmap, m, tmp)
+  HASH_ITER (hh, flexmap, m, tmp)
   {
     munmap (m->addr, m->length);
 #if defined(DEBUG) || defined(DEBUG2)
-    fprintf(stderr,"Xmem unmap address %p of size %lu\n", m->addr,
-            (unsigned long int) m->length);
+    fprintf (stderr, "Exm unmap address %p of size %lu\n", m->addr,
+             (unsigned long int) m->length);
 #endif
-    pid = getpid();
-    if(pid == m->pid)
-    {
+    pid = getpid ();
+    if (pid == m->pid)
+      {
 #if defined(DEBUG) || defined(DEBUG2)
-      fprintf(stderr,"Xmem ulink %s\n", m->path);
+        fprintf (stderr, "Exm ulink %s\n", m->path);
 #endif
-      unlink (m->path);
-      HASH_DEL (flexmap, m);
-      freemap (m);
-    }
+        unlink (m->path);
+        HASH_DEL (flexmap, m);
+        freemap (m);
+      }
   }
   omp_unset_nest_lock (&lock);
 #if defined(DEBUG) || defined(DEBUG2)
-  fprintf(stderr,"Xmem finalized\n");
+  fprintf (stderr, "Exm finalized\n");
 #endif
 }
 
@@ -145,7 +146,7 @@ freemap (struct map *m)
 void *
 uthash_malloc_ (size_t size)
 {
-  if(!exm_default_malloc)
+  if (!exm_default_malloc)
     exm_default_malloc = (void *(*)(size_t)) dlsym (RTLD_NEXT, "malloc");
   return (*exm_default_malloc) (size);
 }
@@ -153,7 +154,7 @@ uthash_malloc_ (size_t size)
 void
 uthash_free_ (void *ptr)
 {
-  if(!exm_default_free)
+  if (!exm_default_free)
     exm_default_free = (void *(*)(void *)) dlsym (RTLD_NEXT, "free");
   (*exm_default_free) (ptr);
 }
@@ -166,62 +167,67 @@ malloc (size_t size)
   int j;
   int fd;
 
-  if(!exm_default_malloc)
+  if (!exm_default_malloc)
     exm_default_malloc = (void *(*)(size_t)) dlsym (RTLD_NEXT, "malloc");
-  if (size > exm_threshold && READY>0)
+
+  if (size < exm_threshold || READY < 1)
     {
-      m = (struct map *) ((*exm_default_malloc) (sizeof (struct map)));
-      m->path = (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
-      memset(m->path,0,EXM_MAX_PATH_LEN);
-      omp_set_nest_lock (&lock);
-      strncpy (m->path, exm_fname_template, EXM_MAX_PATH_LEN);
-      m->length = size;
-      fd = mkostemp (m->path, O_RDWR | O_CREAT);
-      j = ftruncate (fd, m->length);
-      if (j < 0)
-        {
-          omp_unset_nest_lock (&lock);
-          close (fd);
-          unlink (m->path);
-          freemap (m);
-          return NULL;
-        }
-      m->addr =
-        mmap (NULL, m->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-      madvise(m->addr, m->length, exm_advise);
-      m->pid = getpid();
-      x = m->addr;
+      x = (*exm_default_malloc) (size);
+#ifdef DEBUG
+      fprintf (stderr, "malloc %p\n", x);
+#endif
+      if (x)
+        return x;               // The usual malloc
+      if (READY < 1)
+        return NULL;            // malloc failed
+    }
+
+// If either size >= the threshold value and READY >= 1, or
+// we failed to malloc any size and READY >= 1, then try mmap.
+  m = (struct map *) ((*exm_default_malloc) (sizeof (struct map)));
+  m->path = (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
+  memset (m->path, 0, EXM_MAX_PATH_LEN);
+  omp_set_nest_lock (&lock);
+  strncpy (m->path, exm_fname_template, EXM_MAX_PATH_LEN);
+  m->length = size;
+  fd = mkostemp (m->path, O_RDWR | O_CREAT);
+  j = ftruncate (fd, m->length);
+  if (j < 0)
+    {
+      omp_unset_nest_lock (&lock);
       close (fd);
+      unlink (m->path);
+      freemap (m);
+      return NULL;
+    }
+  m->addr = mmap (NULL, m->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  madvise (m->addr, m->length, exm_advise);
+  m->pid = getpid ();
+  x = m->addr;
+  close (fd);
 #if defined(DEBUG) || defined(DEBUG2)
-      fprintf(stderr,"Xmem malloc address %p, size %lu, file  %s\n", m->addr,
-              (unsigned long int) m->length, m->path);
+  fprintf (stderr, "Exm malloc address %p, size %lu, file  %s\n", m->addr,
+           (unsigned long int) m->length, m->path);
 #endif
 /* Check to make sure that this address is not already in the hash. If it is,
  * then something is terribly wrong and we must bail.
  */
-      HASH_FIND_PTR (flexmap, m->addr, y);
-      if(y)
-      {
-        munmap (m->addr, m->length);
-        unlink (m->path);
-        freemap (m);
-        x = NULL;
-      } else
-      {
-        HASH_ADD_PTR (flexmap, addr, m);
-      }
-#if defined(DEBUG) || defined(DEBUG2)
-      fprintf(stderr,"hash count = %u\n", HASH_COUNT (flexmap));
-#endif
-      omp_unset_nest_lock (&lock);
+  HASH_FIND_PTR (flexmap, m->addr, y);
+  if (y)
+    {
+      munmap (m->addr, m->length);
+      unlink (m->path);
+      freemap (m);
+      x = NULL;
     }
   else
     {
-      x = (*exm_default_malloc) (size);
-#ifdef DEBUG
-      fprintf(stderr,"malloc %p\n",x);
-#endif
+      HASH_ADD_PTR (flexmap, addr, m);
     }
+#if defined(DEBUG) || defined(DEBUG2)
+  fprintf (stderr, "hash count = %u\n", HASH_COUNT (flexmap));
+#endif
+  omp_unset_nest_lock (&lock);
   return x;
 }
 
@@ -232,39 +238,39 @@ free (void *ptr)
   pid_t pid;
   if (!ptr)
     return;
-  if (READY>0)
+  if (READY > 0)
     {
 #ifdef DEBUG
-fprintf(stderr,"free %p \n",ptr);
+      fprintf (stderr, "free %p \n", ptr);
 #endif
       omp_set_nest_lock (&lock);
       HASH_FIND_PTR (flexmap, &ptr, m);
       if (m)
         {
 #if defined(DEBUG) || defined(DEBUG2)
-          fprintf(stderr,"Xmem unmap address %p of size %lu\n", ptr,
-                  (unsigned long int) m->length);
+          fprintf (stderr, "Exm unmap address %p of size %lu\n", ptr,
+                   (unsigned long int) m->length);
 #endif
           munmap (ptr, m->length);
 /* Make sure a child process does not accidentally delete a mapping owned
  * by a parent.
  */
-          pid = getpid();
-          if(pid == m->pid)
-          {
+          pid = getpid ();
+          if (pid == m->pid)
+            {
 #if defined(DEBUG) || defined(DEBUG2)
-          fprintf(stderr,"Xmem ulink %p/%s\n", ptr, m->path);
+              fprintf (stderr, "Exm ulink %p/%s\n", ptr, m->path);
 #endif
-            unlink (m->path);
-            HASH_DEL (flexmap, m);
-            freemap (m);
-          }
+              unlink (m->path);
+              HASH_DEL (flexmap, m);
+              freemap (m);
+            }
           omp_unset_nest_lock (&lock);
           return;
         }
       omp_unset_nest_lock (&lock);
     }
-  if(!exm_default_free)
+  if (!exm_default_free)
     exm_default_free = (void *(*)(void *)) dlsym (RTLD_NEXT, "free");
   (*exm_default_free) (ptr);
 }
@@ -276,17 +282,16 @@ fprintf(stderr,"free %p \n",ptr);
 void *
 valloc (size_t size)
 {
-  if (READY>0 && size > exm_threshold)
+  if (READY > 0 && size > exm_threshold)
     {
 #if defined(DEBUG) || defined(DEBUG2)
-      fprintf(stderr,"Xmem valloc...handing off to exm malloc\n");
+      fprintf (stderr, "Exm valloc...handing off to exm malloc\n");
 #endif
       return malloc (size);
     }
-  if(!exm_default_valloc)
-    exm_default_valloc =
-      (void *(*)(size_t)) dlsym (RTLD_NEXT, "valloc");
-  return exm_default_valloc(size);
+  if (!exm_default_valloc)
+    exm_default_valloc = (void *(*)(size_t)) dlsym (RTLD_NEXT, "valloc");
+  return exm_default_valloc (size);
 }
 
 /* Realloc is complicated in the case of fork. We have to protect parents from
@@ -302,7 +307,7 @@ realloc (void *ptr, size_t size)
   pid_t pid;
   size_t copylen;
 #ifdef DEBUG
-  fprintf(stderr,"realloc\n");
+  fprintf (stderr, "realloc\n");
 #endif
 
 /* Handle two special realloc cases: */
@@ -315,10 +320,10 @@ realloc (void *ptr, size_t size)
     }
 
   x = NULL;
-  if(!exm_default_realloc)
+  if (!exm_default_realloc)
     exm_default_realloc =
       (void *(*)(void *, size_t)) dlsym (RTLD_NEXT, "realloc");
-  if (READY>0)
+  if (READY > 0)
     {
       omp_set_nest_lock (&lock);
       HASH_FIND_PTR (flexmap, &ptr, m);
@@ -329,30 +334,33 @@ realloc (void *ptr, size_t size)
  * to screw with the parent's mapping.
  */
           munmap (ptr, m->length);
-          pid = getpid();
+          pid = getpid ();
           child = 0;
-          if(pid == m->pid)
-          {
-            HASH_DEL (flexmap, m);
-            m->length = size;
-            fd = open (m->path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-          } else
-          {
+          if (pid == m->pid)
+            {
+              HASH_DEL (flexmap, m);
+              m->length = size;
+              fd = open (m->path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+            }
+          else
+            {
 /* Uh oh. We're in a child process. We need to copy this mapping and create a
  * new map entry unique to the child.  Also  need to copy old data up to min
  * (size, m->length), this sucks.
  */
-            y = m;
-            child = 1;
-            m = (struct map *) ((*exm_default_malloc) (sizeof (struct map)));
-            m->path = (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
-            memset(m->path,0,EXM_MAX_PATH_LEN);
-            strncpy (m->path, exm_fname_template, EXM_MAX_PATH_LEN);
-            m->length = size;
-            copylen = m->length;
-            if(y->length < copylen) copylen = y->length;
-            fd = mkostemp (m->path, O_RDWR | O_CREAT);
-          }
+              y = m;
+              child = 1;
+              m =
+                (struct map *) ((*exm_default_malloc) (sizeof (struct map)));
+              m->path = (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
+              memset (m->path, 0, EXM_MAX_PATH_LEN);
+              strncpy (m->path, exm_fname_template, EXM_MAX_PATH_LEN);
+              m->length = size;
+              copylen = m->length;
+              if (y->length < copylen)
+                copylen = y->length;
+              fd = mkostemp (m->path, O_RDWR | O_CREAT);
+            }
           if (fd < 0)
             goto bail;
           j = ftruncate (fd, m->length);
@@ -361,24 +369,25 @@ realloc (void *ptr, size_t size)
           m->addr =
             mmap (NULL, m->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 /* Here is a rather unfortunate child copy... XXX ADAPT THIS TO USE A COW MAP */
-          if(child) exm_default_memcpy(m->addr,y->addr,copylen);
-          m->pid = getpid();
+          if (child)
+            exm_default_memcpy (m->addr, y->addr, copylen);
+          m->pid = getpid ();
 /* Check for existence of the address in the hash. It must not already exist,
  * (after all we just removed it and we hold the lock)--if it does something
  * is terribly wrong and we bail.
  */
           HASH_FIND_PTR (flexmap, m->addr, y);
-          if(y)
-          {
-            munmap (m->addr, m->length);
-            goto bail;
-          }
+          if (y)
+            {
+              munmap (m->addr, m->length);
+              goto bail;
+            }
           HASH_ADD_PTR (flexmap, addr, m);
           x = m->addr;
           close (fd);
 #if defined(DEBUG) || defined(DEBUG2)
-          fprintf(stderr,"Xmem realloc address %p size %lu\n", ptr,
-                  (unsigned long int) m->length);
+          fprintf (stderr, "Exm realloc address %p size %lu\n", ptr,
+                   (unsigned long int) m->length);
 #endif
           omp_unset_nest_lock (&lock);
           return x;
@@ -401,9 +410,9 @@ void *
 reallocf (void *ptr, size_t size)
 {
 // XXX WRITE ME!
-  return reallocf(ptr, size);
+  return reallocf (ptr, size);
 }
-# else
+#else
 // XXX memalign, posix_memalign are not in OSX/BSD, but are in Linux
 // and POSIX. Define them here.
 // XXX WRITE ME!
@@ -436,33 +445,33 @@ memcpy (void *dest, const void *src, size_t n)
   int src_fd, dest_fd;
   char buf[BUFSIZ];
   ssize_t s;
-  if(!exm_default_memcpy)
+  if (!exm_default_memcpy)
     exm_default_memcpy =
       (void *(*)(void *, const void *, size_t)) dlsym (RTLD_NEXT, "memcpy");
-  dest_off = (void *)( (char *)dest - exm_offset);
-  src_off  = (void *)( (char *)src  - exm_offset);
+  dest_off = (void *) ((char *) dest - exm_offset);
+  src_off = (void *) ((char *) src - exm_offset);
   omp_set_nest_lock (&lock);
   HASH_FIND_PTR (flexmap, &src_off, SRC);
   HASH_FIND_PTR (flexmap, &dest_off, DEST);
   if (!SRC || !DEST)
-  {
+    {
 /* One or more of src, dest is not the start of a exm allocation.
  * Default in this case to the usual memcpy.
  */
-    omp_unset_nest_lock (&lock);
-    return (*exm_default_memcpy) (dest, src, n);
-  }
-  if(SRC->length != (n + exm_offset) || DEST->length != (n+exm_offset))
-  {
+      omp_unset_nest_lock (&lock);
+      return (*exm_default_memcpy) (dest, src, n);
+    }
+  if (SRC->length != (n + exm_offset) || DEST->length != (n + exm_offset))
+    {
 /* Our efficient methods below require copy of a full region.
  * Default in this case to the usual memcpy.
  */
-    omp_unset_nest_lock (&lock);
-    return (*exm_default_memcpy) (dest, src, n);
-  }
+      omp_unset_nest_lock (&lock);
+      return (*exm_default_memcpy) (dest, src, n);
+    }
 #if defined(DEBUG) || defined(DEBUG2)
-  fprintf(stderr,"CAZART! Xmem memcopy address %p src_addr %p of size %lu\n", SRC->addr, src,
-            (unsigned long int) SRC->length);
+  fprintf (stderr, "CAZART! Exm memcopy address %p src_addr %p of size %lu\n",
+           SRC->addr, src, (unsigned long int) SRC->length);
 #endif
 /* XXX
 what we really want here is to take the two file mappings and overlay them
@@ -479,12 +488,13 @@ file (all in place).
 
 for now the best we can do is a reasonably efficient copy
 */
-  src_fd = open(SRC->path,O_RDONLY);
-  dest_fd = open(DEST->path,O_RDWR);
+  src_fd = open (SRC->path, O_RDONLY);
+  dest_fd = open (DEST->path, O_RDWR);
   omp_unset_nest_lock (&lock);
-  lseek(src_fd, exm_offset, SEEK_SET);
-  lseek(dest_fd, exm_offset, SEEK_SET);
-  while ((s = read(src_fd, buf, BUFSIZ)) > 0) write(dest_fd, buf, s);
+  lseek (src_fd, exm_offset, SEEK_SET);
+  lseek (dest_fd, exm_offset, SEEK_SET);
+  while ((s = read (src_fd, buf, BUFSIZ)) > 0)
+    write (dest_fd, buf, s);
   return dest;
 }
 
@@ -502,15 +512,16 @@ calloc (size_t count, size_t size)
 {
   void *x;
   size_t n = count * size;
-  if (READY>0 && n > exm_threshold)
+  if (READY > 0 && n > exm_threshold)
     {
 #if defined(DEBUG) || defined(DEBUG2)
-      fprintf(stderr,"Xmem calloc...handing off to exm malloc\n");
+      fprintf (stderr, "Exm calloc...handing off to exm malloc\n");
 #endif
       return malloc (n);
     }
-  if(!exm_hook) exm_init();
-  x = exm_hook (n);//, NULL);
+  if (!exm_hook)
+    exm_init ();
+  x = exm_hook (n);             //, NULL);
   memset (x, 0, n);
   return x;
 }
