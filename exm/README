@@ -1,0 +1,11 @@
+Quick example:
+
+make
+EXM_HOME=$(pwd) ./exm <program> [program arguments]
+
+
+Or, install into the default location of /usr/local/:
+
+make
+make install
+exm <program>

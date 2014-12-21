@@ -5,12 +5,12 @@
 #include <Rinternals.h>
 
 /*
- * flexmem_threshold
+ * exm_threshold
  * INPUT * J SEXP   Threshold value or R_NilValue
  * OUTPUT * SEXP     Threshold set point or R_NilValue on error
  */
 SEXP
-Rflexmem_threshold (SEXP J)
+Rexm_threshold (SEXP J)
 {
   SEXP VAL;
   void *handle;
@@ -24,7 +24,7 @@ Rflexmem_threshold (SEXP J)
       return R_NilValue;
   }
   dlerror ();
-  set_threshold = (size_t (*)(size_t ))dlsym(handle, "flexmem_set_threshold");
+  set_threshold = (size_t (*)(size_t ))dlsym(handle, "exm_set_threshold");
   if ((derror = dlerror ()) != NULL)  {
       error ("%s\n",dlerror ());
       return R_NilValue;
@@ -39,15 +39,15 @@ Rflexmem_threshold (SEXP J)
 }
 
 /*
- * flexmem_set_pattern
+ * exm_set_pattern
  *
  * INPUT S SEXP   A mktemp-style tempate string
  * OUTPUT An SEXP integer, 0 for success otherwise error
- * int flexmem_set_pattern (char *pattern)
+ * int exm_set_pattern (char *pattern)
  *
  */
 SEXP
-Rflexmem_set_pattern (SEXP S)
+Rexm_set_pattern (SEXP S)
 {
   SEXP VAL;
   void *handle;
@@ -61,7 +61,7 @@ Rflexmem_set_pattern (SEXP S)
       return R_NilValue;
   }
   dlerror ();
-  set_pattern = (int (*)(char *))dlsym(handle, "flexmem_set_pattern");
+  set_pattern = (int (*)(char *))dlsym(handle, "exm_set_pattern");
   if ((derror = dlerror ()) != NULL)  {
       error ("%s\n",dlerror ());
       return R_NilValue;
@@ -75,15 +75,15 @@ Rflexmem_set_pattern (SEXP S)
 }
 
 /*
- * flexmem_set_path
+ * exm_set_path
  *
  * INPUT S SEXP   A path to map files in
  * OUTPUT An SEXP integer, 0 for success otherwise error
- * int flexmem_set_path (char *path)
+ * int exm_set_path (char *path)
  *
  */
 SEXP
-Rflexmem_set_path (SEXP S)
+Rexm_set_path (SEXP S)
 {
   SEXP VAL;
   void *handle;
@@ -97,7 +97,7 @@ Rflexmem_set_path (SEXP S)
       return R_NilValue;
   }
   dlerror ();
-  set_path = (int (*)(char *))dlsym(handle, "flexmem_set_path");
+  set_path = (int (*)(char *))dlsym(handle, "exm_set_path");
   if ((derror = dlerror ()) != NULL)  {
       error ("%s\n",dlerror ());
       return R_NilValue;
@@ -112,7 +112,7 @@ Rflexmem_set_path (SEXP S)
 
 
 SEXP
-Rflexmem_get_template ()
+Rexm_get_template ()
 {
   SEXP VAL;
   void *handle;
@@ -126,7 +126,7 @@ Rflexmem_get_template ()
       return R_NilValue;
   }
   dlerror ();
-  get_template = (char *(*)(void))dlsym(handle, "flexmem_get_template");
+  get_template = (char *(*)(void))dlsym(handle, "exm_get_template");
   if ((derror = dlerror ()) != NULL)  {
       error ("%s\n",dlerror ());
       return R_NilValue;
@@ -142,7 +142,7 @@ Rflexmem_get_template ()
 }
 
 SEXP
-Rflexmem_lookup (SEXP OBJECT)
+Rexm_lookup (SEXP OBJECT)
 {
   SEXP VAL;
   void *handle;
@@ -155,7 +155,7 @@ Rflexmem_lookup (SEXP OBJECT)
       return R_NilValue;
   }
   dlerror ();
-  flookup = (char *(*)(void *))dlsym(handle, "flexmem_lookup");
+  flookup = (char *(*)(void *))dlsym(handle, "exm_lookup");
   if ((derror = dlerror ()) != NULL)  {
       error ("%s\n",dlerror ());
       return R_NilValue;

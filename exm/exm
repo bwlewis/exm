@@ -1,0 +1,43 @@
+#!/bin/bash
+# Generic exm wrapper
+
+#Linux: sharedobject
+#	export LD_PRELOAD=exm.so
+#Mac: sharedobject
+#	export DYLD_INSERT_LIBRARIES="exm.so"
+
+if test $# -lt 1; then
+  echo "Usage:"
+  echo "exm <program> [[arg1], [arg2], ...]"
+  exit 1
+fi
+
+# Allow users to define EXM_HOME
+if test -z "${EXM_HOME}"; then
+  EXM_HOME=
+fi
+EXM=${EXM_HOME}/lib/libexm.so
+
+# Acquire the path of exm script
+SOURCE="${BASH_SOURCE[0]}"
+DIR="$( dirname "$SOURCE" )"
+while [ -h "$SOURCE" ];
+do
+  SOURCE="$(readlink "$SOURCE")" [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+  DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+# Check existence of library, if not found make a weak attempt at finding it
+# before bailing out.
+if test ! -f "${EXM}"; then
+  EXM=$(find ${DIR}/../ -name "libexm.so")
+fi
+if test ! -f "${EXM}" -o -z "${EXM}"; then
+  echo "Can't find libexm.so, consider setting EXM_HOME"
+  exit 1
+fi
+
+# Run whatever
+export LD_PRELOAD=${EXM}
+exec "$@"
