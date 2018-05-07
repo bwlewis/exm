@@ -20,13 +20,13 @@ Rexm_threshold (SEXP J)
 
   handle = dlopen (NULL, RTLD_LAZY);
   if (!handle) {
-      error ("%s\n",dlerror ());
+      error ("%s\n", dlerror ());
       return R_NilValue;
   }
   dlerror ();
   set_threshold = (size_t (*)(size_t ))dlsym(handle, "exm_set_threshold");
   if ((derror = dlerror ()) != NULL)  {
-      error ("%s\n",dlerror ());
+      error ("%s\n", dlerror ());
       return R_NilValue;
   }
   dlclose (handle);
@@ -57,13 +57,13 @@ Rexm_set_pattern (SEXP S)
 
   handle = dlopen (NULL, RTLD_LAZY);
   if (!handle) {
-      error ("%s\n",dlerror ());
+      error ("%s\n", dlerror ());
       return R_NilValue;
   }
   dlerror ();
   set_pattern = (int (*)(char *))dlsym(handle, "exm_set_pattern");
   if ((derror = dlerror ()) != NULL)  {
-      error ("%s\n",dlerror ());
+      error ("%s\n", dlerror ());
       return R_NilValue;
   }
 
@@ -93,13 +93,12 @@ Rexm_set_path (SEXP S)
 
   handle = dlopen (NULL, RTLD_LAZY);
   if (!handle) {
-      error ("%s\n",dlerror ());
+      error ("%s\n", dlerror ());
       return R_NilValue;
   }
   dlerror ();
   set_path = (int (*)(char *))dlsym(handle, "exm_set_path");
   if ((derror = dlerror ()) != NULL)  {
-      error ("%s\n",dlerror ());
       return R_NilValue;
   }
 
@@ -122,13 +121,13 @@ Rexm_get_template ()
 
   handle = dlopen (NULL, RTLD_LAZY);
   if (!handle) {
-      error ("%s\n",dlerror ());
+      error ("%s\n", dlerror ());
       return R_NilValue;
   }
   dlerror ();
   get_template = (char *(*)(void))dlsym(handle, "exm_get_template");
   if ((derror = dlerror ()) != NULL)  {
-      error ("%s\n",dlerror ());
+      error ("%s\n", dlerror ());
       return R_NilValue;
   }
 
@@ -151,13 +150,13 @@ Rexm_lookup (SEXP OBJECT)
 
   handle = dlopen (NULL, RTLD_LAZY);
   if (!handle) {
-      error ("%s\n",dlerror ());
+      error ("%s\n", dlerror ());
       return R_NilValue;
   }
   dlerror ();
   flookup = (char *(*)(void *))dlsym(handle, "exm_lookup");
   if ((derror = dlerror ()) != NULL)  {
-      error ("%s\n",dlerror ());
+      error ("%s\n", dlerror ());
       return R_NilValue;
   }
   dlclose (handle);
