@@ -11,7 +11,7 @@
 static char exm_fname_pattern[EXM_MAX_PATH_LEN] = "XXXXXX";
 static char exm_fname_path[EXM_MAX_PATH_LEN] = "/tmp";
 
-char exm_fname_template[EXM_MAX_PATH_LEN] = "/tmp/fm_XXXXXX";
+char exm_fname_template[EXM_MAX_PATH_LEN] = "/tmp/exm_XXXXXX";
 size_t exm_threshold = 2000000000;
 
 int exm_advise = MADV_SEQUENTIAL;
