@@ -23,7 +23,7 @@ main (int argc, void **argv)
   size_t (*set_threshold) (size_t);
   void *handle;
   handle = dlopen (NULL, RTLD_LAZY);
-  if (!handle) return -1;
+  if (!handle) return 2;
   dlerror ();
   set_threshold = (size_t (*)(size_t ))dlsym(handle, "exm_set_threshold");
   if ((derror = dlerror ()) == NULL)  (*set_threshold) (SIZE);
@@ -32,30 +32,22 @@ main (int argc, void **argv)
   printf ("> malloc below threshold\n");
   x = malloc (SIZE - 1);
   memcpy (x, (const void *) y, strlen (y));
-  printf ("> (press a key to continue)\n");
-  getc (stdin);
   free (x);
 
   printf ("> malloc above threshold\n");
   x = malloc (SIZE + 1);
   memcpy (x, (const void *) y, strlen (y));
-  printf ("> (press a key to continue)\n");
-  getc (stdin);
   free (x);
 
 
   printf ("> calloc below threshold\n");
   x = calloc (SIZE - 1, 1);
   memcpy (x, (const void *) y, strlen (y));
-  printf ("> (press a key to continue)\n");
-  getc (stdin);
   free (x);
 
   printf ("> calloc above threshold\n");
   x = calloc (SIZE + 1, 1);
   memcpy (x, (const void *) y, strlen (y));
-  printf ("> (press a key to continue)\n");
-  getc (stdin);
   free (x);
 
 
@@ -63,18 +55,14 @@ main (int argc, void **argv)
   x = malloc (SIZE - 1);
   x = realloc (x, SIZE + 1);
   memcpy (x, (const void *) y, strlen (y));
-  printf ("> (press a key to continue)\n");
-  getc (stdin);
   free (x);
 
   printf ("> malloc + realloc above threshold\n");
   x = malloc (SIZE + 1);
   x = realloc (x, SIZE + 10);
   memcpy (x, (const void *) y, strlen (y));
-  printf ("> (press a key to continue)\n");
-  getc (stdin);
   free (x);
 
-
+  printf("> test OK\n");
   return 0;
 }

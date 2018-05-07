@@ -1,12 +1,3 @@
-/*   ___    ___ _____ ______   _______   _____ ______      
- *  |\  \  /  /|\   _ \  _   \|\  ___ \ |\   _ \  _   \
- *  \ \  \/  / | \  \\\__\ \  \ \   __/|\ \  \\\__\ \  \
- *   \ \    / / \ \  \\|__| \  \ \  \_|/_\ \  \\|__| \  \
- *    /     \/   \ \  \    \ \  \ \  \_|\ \ \  \    \ \  \
- *   /  /\   \    \ \__\    \ \__\ \_______\ \__\    \ \__\
- *  /__/ /\ __\    \|__|     \|__|\|_______|\|__|     \|__|
- *  |__|/ \|__|                                            
- */                                                        
 #include <omp.h>
 #include "uthash.h"
 
@@ -19,7 +10,7 @@
 
 /* NOTES
  *
- * Xmem uses well-known methods to overload various memory
+ * exm uses well-known methods to overload various memory
  * allocation functions such that allocations above a threshold use memory
  * mapped files. The library maintains a mapping of allocated addresses and
  * corresponding backing files and cleans up files as they are de-allocated.

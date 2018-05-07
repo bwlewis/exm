@@ -13,5 +13,4 @@ OS_type: unix
 Depends:
     methods
 Suggests:
-    testthat,
     roxygen2

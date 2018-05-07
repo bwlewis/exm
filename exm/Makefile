@@ -17,12 +17,13 @@ lib:
 clean:
 	rm -f *.so *.o  test
 
-test:
+test: lib
 	$(CC) -o test test.c -ldl
+	LD_PRELOAD=$(shell pwd)/libexm.so ./test
 
-install:
+install: lib
 	mkdir -p $(PREFIX)/bin $(PREFIX)/lib
-	cat exm | sed -e "s%FLEXMEM_HOME=$$%FLEXMEM_HOME=${PREFIX}%" > $(PREFIX)/bin/exm
+	cat exm | sed -e "s%EXM_HOME=$$%EXM_HOME=${PREFIX}%" > $(PREFIX)/bin/exm
 	chmod +x $(PREFIX)/bin/exm
 	cp libexm.so $(PREFIX)/lib
 

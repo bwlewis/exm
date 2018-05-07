@@ -35,16 +35,14 @@ Installing exm
 ---
 
 The exm package can be installed by navigating to the 
-`exm/standalone/src` directory using the following commands:
+`exm` directory using the following commands:
 
 ```bash
-mike@mike-VirtualBox:~/Projects/exm/standalone/src
-> make all
-mike@mike-VirtualBox:~/Projects/exm/standalone/src
-> sudo make install
+make all
+sudo make install
 ```
 
-Please note that you may get a warning message concerning "__malloc_hook".
+Please note that you may get a warning message concerning `__malloc_hook`.
 This is due to a recent change in gcc and is currently being worked through.
 Also note that install will put the executable into /usr/local/bin and the
 required shared object file inot /usr/local/lib.
@@ -52,11 +50,12 @@ required shared object file inot /usr/local/lib.
 Installing the R exm package
 ---
 
-After installing exm the R exm package can be installed by navigating
-to the `exm/Rpkg` directory and using the following commands in a shell:
+After installing exm the R exm package can be installed by
+the following commands in a shell:
 
 ```bash
-R CMD INSTALL exm
+R CMD build Rpkg
+R CMD INSTALL exm_0.1.tar.gz
 ```
 
 The package documentation provides more information about how to use the 
@@ -67,9 +66,8 @@ Using exm
 
 Start an application in exm by specifying the application as an argument
 
-
 ```r
-mike@mike-VirtualBox:~/$ exm R
+exm R
 ```
 
 
