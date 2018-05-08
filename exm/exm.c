@@ -475,10 +475,7 @@ The problem with the OS cow is that changes to DEST will go into the
 buffer cache instead of a file. If those changes are huge, they will
 swap--mostly defeating our system.
 
-So we need a magic overlay FS that can take two source files of the
-same size and modify the 2nd file to be a COW mask above the 1st
-file (all in place).
-
+So we need a magic overlay FS that avoids the buffer cache/swap.
 for now the best we can do is a reasonably efficient copy
 */
   src_fd = open (SRC->path, O_RDONLY);

@@ -2,9 +2,9 @@
 # Generic exm wrapper
 
 #Linux: sharedobject
-#	export LD_PRELOAD=exm.so
+#	export LD_PRELOAD=libexm.so
 #Mac: sharedobject
-#	export DYLD_INSERT_LIBRARIES="exm.so"
+#	export DYLD_INSERT_LIBRARIES="libexm.so"
 
 if test $# -lt 1; then
   echo "Usage:"
