@@ -63,10 +63,9 @@ Start an application in exm by specifying the application as an argument
 exm R
 ```
 
-
-The memory-mapped files are stored in `/tmp` by default. This parameter along
-with others can be interrogated using the Rexm package, included in
-this project.
+The R package memory-mapped files are stored in the session R temporary
+directory by default. This parameter along with others can be set using the
+package functions.
 
 Support
 ---
