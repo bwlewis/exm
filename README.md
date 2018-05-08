@@ -1,21 +1,14 @@
 ```
-       __.....__                            __  __   ___    
-   .-''         '.                         |  |/  `.'   `.  
-  /     .-''"'-.  `.                       |   .-.  .-.   ' 
- /     /________\   \    ____     _____    |  |  |  |  |  | 
- |                  |   `.   \  .'    /    |  |  |  |  |  | 
- \    .-------------'     `.  `'    .'     |  |  |  |  |  | 
-  \    '-.____...---.       '.    .'       |  |  |  |  |  | 
-   `.             .'        .'     `.      |__|  |__|  |__| 
-     `''-...... -'        .'  .'`.   `.                     
-                        .'   /    `.   `.                   
-                       '----'       '----'                  
+  ___  _  ______ ___ 
+ / _ \| |/_/ __ `__ \
+/  __/>  </ / / / / /
+\___/_/|_/_/ /_/ /_/ 
+                     
 ```
-
 
 exm provides utilities to override the memory allocator,
 allowing users to create out-of-core data structures that may be much
-larger than available RAM
+larger than available RAM.
 
 Description
 ---

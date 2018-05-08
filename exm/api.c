@@ -1,3 +1,10 @@
+/*
+  ___  _  ______ ___ 
+ / _ \| |/_/ __ `__ \
+/  __/>  </ / / / / /
+\___/_/|_/_/ /_/ /_/ 
+                     
+*/
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>

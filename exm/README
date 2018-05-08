@@ -1,3 +1,11 @@
+```
+  ___  _  ______ ___ 
+ / _ \| |/_/ __ `__ \
+/  __/>  </ / / / / /
+\___/_/|_/_/ /_/ /_/ 
+                     
+```
+
 Use the EXM_HOME environment variable to set the path to the libexm.so library.
 Quick example:
 
@@ -8,5 +16,5 @@ EXM_HOME=$(pwd) ./exm <program> [program arguments]
 Or install into the default location of /usr/local/:
 
 make
-make install
+sudo make install
 exm <program>
