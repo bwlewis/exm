@@ -5,7 +5,7 @@
 #undef DEBUG
 #undef DEBUG2
 
-#define DEBUG2
+//#define DEBUG2
 
 
 /* NOTES
