@@ -8,7 +8,7 @@
 /* The map structure tracks the file mappings.  */
 struct map
 {
-  void *addr;                   /* Memory address, list key */
+  void *addr;                   /* Memory address, hash key */
   char *path;                   /* File path */
   size_t length;                /* Mapping length */
   pid_t pid;                    /* Process ID of owner (for fork) */

@@ -172,7 +172,7 @@ malloc (size_t size)
       if (x)
         return x;               // The usual malloc
       if (READY < 1)
-        return NULL;            // malloc failed
+        return NULL;            // malloc failed, not ready
     }
 
 // If either size >= the threshold value and READY >= 1, or
@@ -355,10 +355,16 @@ realloc (void *ptr, size_t size)
               fd = mkostemp (m->path, O_RDWR | O_CREAT);
             }
           if (fd < 0)
-            goto bail;
+            {
+              omp_unset_nest_lock (&lock);
+              goto bail;
+            }
           j = ftruncate (fd, m->length);
           if (j < 0)
-            goto bail;
+            {
+              omp_unset_nest_lock (&lock);
+              goto bail;
+            }
           m->addr =
             mmap (NULL, m->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 /* Here is a rather unfortunate child copy... XXX ADAPT THIS TO USE A COW MAP */
@@ -372,6 +378,7 @@ realloc (void *ptr, size_t size)
           HASH_FIND_PTR (flexmap, m->addr, y);
           if (y)
             {
+              omp_unset_nest_lock (&lock);
               munmap (m->addr, m->length);
               goto bail;
             }
