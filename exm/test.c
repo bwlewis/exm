@@ -21,13 +21,14 @@ main (int argc, void **argv)
   size_t SIZE = 1000000;
 
   size_t (*set_threshold) (size_t);
+  int (*_madvise) (void *, int);
   void *handle;
   handle = dlopen (NULL, RTLD_LAZY);
   if (!handle) return 2;
   dlerror ();
   set_threshold = (size_t (*)(size_t ))dlsym(handle, "exm_set_threshold");
+  _madvise = (int (*)(void *, int))dlsym(handle, "exm_madvise");
   if ((derror = dlerror ()) == NULL)  (*set_threshold) (SIZE);
-  dlclose (handle);
 
   printf ("> malloc below threshold\n");
   x = malloc (SIZE - 1);
@@ -37,6 +38,7 @@ main (int argc, void **argv)
   printf ("> malloc above threshold\n");
   x = malloc (SIZE + 1);
   memcpy (x, (const void *) y, strlen (y));
+  printf ("> exm_madvise(x, 1) = %d\n", _madvise((void *)x, 1));
   free (x);
 
 
@@ -63,6 +65,7 @@ main (int argc, void **argv)
   memcpy (x, (const void *) y, strlen (y));
   free (x);
 
+  dlclose (handle);
   printf("> test OK\n");
   return 0;
 }

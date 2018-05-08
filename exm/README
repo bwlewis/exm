@@ -9,12 +9,17 @@
 Use the EXM_HOME environment variable to set the path to the libexm.so library.
 Quick example:
 
+```
 make
 EXM_HOME=$(pwd) ./exm <program> [program arguments]
-
+```
 
 Or install into the default location of /usr/local/:
 
+```
 make
 sudo make install
 exm <program>
+```
+
+Optionally `make CFLAGS=-DDEBUG` to enabled basic log messages to stderr.

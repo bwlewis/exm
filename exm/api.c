@@ -21,7 +21,6 @@ static char exm_fname_path[EXM_MAX_PATH_LEN] = "/tmp";
 char exm_fname_template[EXM_MAX_PATH_LEN] = "/tmp/exm_XXXXXX";
 size_t exm_threshold = 2000000000;
 
-int exm_advise = MADV_SEQUENTIAL;
 int exm_offset = 0;
 
 /* The next functions allow applications to inspect and change default
@@ -29,15 +28,26 @@ int exm_offset = 0;
  * the library is loaded. They represent the exm API, such as it is.
  *
  * API functions defined below include:
+ * double exm_version ()
  * size_t exm_set_threshold (size_t j)
  * int exm_set_template (char *template)
  * int exm_set_pattern (char *pattern)
  * int exm_set_path (char *path)
- * int exm_madvise (int j)
+ * int exm_madvise (void *addr, int advice)
  * int exm_memcpy_offset (int j)
  * char * exm_lookup(void *addr)
  * char * exm_get_template()
  */
+
+/* Return the exm library version
+ * OUTPUT
+ * (return value): double version major.minor
+ */
+double
+exm_version (char *v)
+{
+  return EXM_VERSION;
+}
 
 /* Set and get threshold size.
  * INPUT
@@ -57,17 +67,23 @@ exm_set_threshold (size_t j)
   return exm_threshold;
 }
 
-/* Set madvise option */
+/* Set madvise option for an exm-allocated region
+ * INPUT
+ * addr: exm-allocated pointer address
+ * advice: one of the madvise options MADV_NORMAL, MADV_RANDOM, MADV_SEQUENTIAL
+ * OUTPUT
+ * (return value): zero on success, -1 on error (see man madvise for errors)
+ */
 int
-exm_madvise (int j)
+exm_madvise (void *addr, int advice)
 {
-  if(j> -1)
-  {
-    omp_set_nest_lock (&lock);
-    exm_advise = j;
-    omp_unset_nest_lock (&lock);
-  }
-  return exm_advise;
+  int j = -1;
+  struct map *x;
+  omp_set_nest_lock (&lock);
+  HASH_FIND_PTR (flexmap, &addr, x);
+  if(x) j = madvise(x->addr, x->length, advice);
+  omp_unset_nest_lock (&lock);
+  return j;
 }
 
 /* Set memcpy offset option */
@@ -143,8 +159,7 @@ exm_set_path (char *p)
   return 0;
 }
 /* Return a copy of the exm_fname_template (allocated internally...
- * it is up to the caller to free the returned copy!! Yikes! My rationale
- * is this--how could I trust a buffer provided by the caller?)
+ * it is up to the caller to free the returned copy!!
  */
 char *
 exm_get_template()

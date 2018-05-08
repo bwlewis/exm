@@ -194,7 +194,7 @@ malloc (size_t size)
       return NULL;
     }
   m->addr = mmap (NULL, m->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  madvise (m->addr, m->length, exm_advise);
+  madvise (m->addr, m->length, EXM_DEFAULT_ADVISE);
   m->pid = getpid ();
   x = m->addr;
   close (fd);

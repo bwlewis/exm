@@ -35,7 +35,7 @@ Rexm_threshold (SEXP J)
   size = (size_t) *(REAL (J));
   REAL(VAL)[0] = (double) (*set_threshold)(size);
   UNPROTECT (1);
-  return (VAL);
+  return VAL;
 }
 
 /*
@@ -71,7 +71,7 @@ Rexm_set_pattern (SEXP S)
   INTEGER(VAL)[0] = (int) (*set_pattern)(temp);
   UNPROTECT (1);
   dlclose (handle);
-  return (VAL);
+  return VAL;
 }
 
 /*
@@ -106,7 +106,7 @@ Rexm_set_path (SEXP S)
   INTEGER(VAL)[0] = (int) (*set_path)(temp);
   UNPROTECT (1);
   dlclose (handle);
-  return (VAL);
+  return VAL;
 }
 
 
@@ -136,8 +136,8 @@ Rexm_get_template ()
   if(!s) return R_NilValue;
   PROTECT (VAL = mkString(s));
   UNPROTECT (1);
-  free(s);
-  return (VAL);
+  free (s);
+  return VAL;
 }
 
 SEXP
@@ -161,9 +161,37 @@ Rexm_lookup (SEXP OBJECT)
   }
   dlclose (handle);
   s = flookup((void *)OBJECT);
-  if(!s) return R_NilValue;
+  if (!s) return R_NilValue;
   PROTECT (VAL = mkString(s));
   UNPROTECT (1);
-  free(s);
-  return (VAL);
+  free (s);
+  return VAL;
+}
+
+
+SEXP
+Rexm_madvise (SEXP OBJECT, SEXP ADVICE)
+{
+  SEXP VAL;
+  void *handle;
+  int (*advise)(void *, int);
+  char *derror;
+  int j = *(INTEGER(ADVICE));
+
+  handle = dlopen (NULL, RTLD_LAZY);
+  if (!handle) {
+      error ("%s\n", dlerror ());
+      return R_NilValue;
+  }
+  dlerror ();
+  advise = (int (*)(void *, int))dlsym(handle, "exm_madvise");
+  if ((derror = dlerror ()) != NULL)  {
+      error ("%s\n", dlerror ());
+      return R_NilValue;
+  }
+  dlclose (handle);
+  PROTECT (VAL = allocVector(INTSXP, 1));
+  INTEGER (VAL)[0] = advise((void *)OBJECT, j);
+  UNPROTECT (1);
+  return VAL;
 }

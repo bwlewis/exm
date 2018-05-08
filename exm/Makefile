@@ -11,8 +11,8 @@ endif
 all: lib
 
 lib:
-	$(CC) -Wall -fopenmp -I. -fPIC -shared -c api.c
-	$(CC) -Wall -fopenmp -I. -fPIC -shared -o libexm.so api.o exm.c -ldl
+	$(CC) $(CFLAGS) -Wall -fopenmp -I. -fPIC -shared -c api.c
+	$(CC) $(CFLAGS) -Wall -fopenmp -I. -fPIC -shared -o libexm.so api.o exm.c -ldl
 
 clean:
 	rm -f *.so *.o  test

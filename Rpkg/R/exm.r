@@ -45,3 +45,14 @@ exm_lookup <- function(object)
 {
   .Call("Rexm_lookup", object, PACKAGE="exm")
 }
+
+#' Lookup the exm backing file for an object
+#' @param object Any R object
+#' @param advice Mapping type, one of "normal", "random", or "sequential"
+#' @return Integer return code from the OS-level madvise call, zero means success
+#' @export
+exm_madvise <- function(object, advice=c("normal", "random", "sequential"))
+{
+  advice <- as.integer(c(normal=0, random=1, sequential=2)[match.arg(advice)])
+  .Call("Rexm_madvise", object, advice, PACKAGE="exm")
+}
