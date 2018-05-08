@@ -195,3 +195,29 @@ Rexm_madvise (SEXP OBJECT, SEXP ADVICE)
   UNPROTECT (1);
   return VAL;
 }
+
+SEXP
+Rexm_version ()
+{
+  SEXP VAL;
+  void *handle;
+  char *derror;
+  double (*ver)();
+
+  handle = dlopen (NULL, RTLD_LAZY);
+  if (!handle) {
+      error ("%s\n", dlerror ());
+      return R_NilValue;
+  }
+  dlerror ();
+  ver = (double (*)())dlsym(handle, "exm_version");
+  if ((derror = dlerror ()) != NULL)  {
+      error ("%s\n", dlerror ());
+      return R_NilValue;
+  }
+  dlclose (handle);
+  PROTECT (VAL = allocVector(REALSXP, 1));
+  REAL (VAL)[0] = ver();
+  UNPROTECT (1);
+  return VAL;
+}

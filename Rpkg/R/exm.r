@@ -56,3 +56,9 @@ exm_madvise <- function(object, advice=c("normal", "random", "sequential"))
   advice <- as.integer(c(normal=0, random=1, sequential=2)[match.arg(advice)])
   .Call("Rexm_madvise", object, advice, PACKAGE="exm")
 }
+
+#' @export
+exm_version <- function()
+{
+  .Call("Rexm_version", PACKAGE="exm")
+}
