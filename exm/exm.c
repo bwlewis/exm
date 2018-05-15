@@ -79,7 +79,7 @@ static int READY = -1;
 static void
 exm_init ()
 {
-#ifdef DEBUG
+#ifdef DEBUG1
   write (2, "INIT \n", 6);
 #endif
   if (READY < 0)
@@ -101,6 +101,9 @@ exm_init ()
 static void
 exm_finalize ()
 {
+#if defined(DEBUG)
+  write(2, "Exm exm_finalize\n", 13);
+#endif
   struct map *m, *tmp;
   pid_t pid;
   omp_set_nest_lock (&lock);
@@ -108,14 +111,14 @@ exm_finalize ()
   HASH_ITER (hh, flexmap, m, tmp)
   {
     munmap (m->addr, m->length);
-#if defined(DEBUG) || defined(DEBUG2)
+#if defined(DEBUG) || defined(DEBUG1)
     fprintf (stderr, "Exm unmap address %p of size %lu\n", m->addr,
              (unsigned long int) m->length);
 #endif
     pid = getpid ();
     if (pid == m->pid)
       {
-#if defined(DEBUG) || defined(DEBUG2)
+#if defined(DEBUG) || defined(DEBUG1)
         fprintf (stderr, "Exm ulink %s\n", m->path);
 #endif
         unlink (m->path);
@@ -124,7 +127,7 @@ exm_finalize ()
       }
   }
   omp_unset_nest_lock (&lock);
-#if defined(DEBUG) || defined(DEBUG2)
+#if defined(DEBUG) || defined(DEBUG1)
   fprintf (stderr, "Exm finalized\n");
 #endif
 }
@@ -173,7 +176,7 @@ malloc (size_t size)
   if (size < exm_threshold || READY < 1)
     {
       x = (*exm_default_malloc) (size);
-#ifdef DEBUG
+#ifdef DEBUG1
       fprintf (stderr, "malloc %p\n", x);
 #endif
       if (x)
@@ -205,7 +208,7 @@ malloc (size_t size)
   m->pid = getpid ();
   x = m->addr;
   close (fd);
-#if defined(DEBUG) || defined(DEBUG2)
+#if defined(DEBUG) || defined(DEBUG1)
   fprintf (stderr, "Exm malloc address %p, size %lu, file  %s\n", m->addr,
            (unsigned long int) m->length, m->path);
 #endif
@@ -224,8 +227,8 @@ malloc (size_t size)
     {
       HASH_ADD_PTR (flexmap, addr, m);
     }
-#if defined(DEBUG) || defined(DEBUG2)
-  fprintf (stderr, "hash count = %u\n", HASH_COUNT (flexmap));
+#if defined(DEBUG) || defined(DEBUG1)
+  fprintf (stderr, "Exm hash count = %u\n", HASH_COUNT (flexmap));
 #endif
   omp_unset_nest_lock (&lock);
   return x;
@@ -240,14 +243,14 @@ free (void *ptr)
     return;
   if (READY > 0)
     {
-#ifdef DEBUG
-      fprintf (stderr, "free %p \n", ptr);
+#ifdef DEBUG1
+      fprintf (stderr, "Exm free %p \n", ptr);
 #endif
       omp_set_nest_lock (&lock);
       HASH_FIND_PTR (flexmap, &ptr, m);
       if (m)
         {
-#if defined(DEBUG) || defined(DEBUG2)
+#if defined(DEBUG) || defined(DEBUG1)
           fprintf (stderr, "Exm unmap address %p of size %lu\n", ptr,
                    (unsigned long int) m->length);
 #endif
@@ -258,7 +261,7 @@ free (void *ptr)
           pid = getpid ();
           if (pid == m->pid)
             {
-#if defined(DEBUG) || defined(DEBUG2)
+#if defined(DEBUG) || defined(DEBUG1)
               fprintf (stderr, "Exm ulink %p/%s\n", ptr, m->path);
 #endif
               unlink (m->path);
@@ -284,7 +287,7 @@ valloc (size_t size)
 {
   if (READY > 0 && size > exm_threshold)
     {
-#if defined(DEBUG) || defined(DEBUG2)
+#if defined(DEBUG) || defined(DEBUG1)
       fprintf (stderr, "Exm valloc...handing off to exm malloc\n");
 #endif
       return malloc (size);
@@ -306,8 +309,8 @@ realloc (void *ptr, size_t size)
   void *x;
   pid_t pid;
   size_t copylen;
-#ifdef DEBUG
-  fprintf (stderr, "realloc\n");
+#ifdef DEBUG1
+  fprintf (stderr, "Exm realloc\n");
 #endif
 
 /* Handle two special realloc cases: */
@@ -392,7 +395,7 @@ realloc (void *ptr, size_t size)
           HASH_ADD_PTR (flexmap, addr, m);
           x = m->addr;
           close (fd);
-#if defined(DEBUG) || defined(DEBUG2)
+#if defined(DEBUG) || defined(DEBUG1)
           fprintf (stderr, "Exm realloc address %p size %lu\n", ptr,
                    (unsigned long int) m->length);
 #endif
@@ -461,7 +464,7 @@ memcpy (void *dest, const void *src, size_t n)
       omp_unset_nest_lock (&lock);
       return (*exm_default_memcpy) (dest, src, n);
     }
-#if defined(DEBUG) || defined(DEBUG2)
+#if defined(DEBUG) || defined(DEBUG1)
   fprintf (stderr, "Exm memcopy address %p src_addr %p of size %lu\n",
            SRC->addr, src, (unsigned long int) SRC->length);
 #endif
@@ -489,7 +492,7 @@ calloc (size_t count, size_t size)
   size_t n = count * size;
   if (READY > 0 && n > exm_threshold)
     {
-#if defined(DEBUG) || defined(DEBUG2)
+#if defined(DEBUG) || defined(DEBUG1)
       fprintf (stderr, "Exm calloc...handing off to exm malloc\n");
 #endif
       return malloc (n);
