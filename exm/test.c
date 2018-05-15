@@ -11,12 +11,20 @@
 
 void testfunc (void);
 
+void
+check_error ()
+{
+  char *derror;
+  if ((derror = dlerror ()) == NULL) return;
+  fprintf(stderr, "%s\n", derror);
+  _exit (1);
+}
+
 int
 main (int argc, void **argv)
 {
   int j;
   void *x;
-  char *derror;
   const char *y = "Cazart!";
   size_t SIZE = 1000000;
 
@@ -27,12 +35,17 @@ main (int argc, void **argv)
   void *handle;
   handle = dlopen (NULL, RTLD_LAZY);
   if (!handle) return 2;
-  dlerror ();
   set_threshold = (size_t (*)(size_t ))dlsym(handle, "exm_set_threshold");
+  check_error ();
   _madvise = (int (*)(void *, int))dlsym(handle, "exm_madvise");
+  check_error ();
   set_path = (int (*)(char *))dlsym(handle, "exm_set_path");
+  check_error ();
   get_template = (char *(*)(void))dlsym(handle, "exm_get_template");
-  if ((derror = dlerror ()) == NULL)  (*set_threshold) (SIZE);
+  check_error ();
+  dlclose (handle);
+
+  printf("> set_threshold() %lu\n", (*set_threshold) (SIZE));
 
   printf("> get_template() %s\n", (*get_template) ());
   (*set_path)("/tmp");
@@ -46,7 +59,7 @@ main (int argc, void **argv)
   printf ("> malloc above threshold\n");
   x = malloc (SIZE + 1);
   memcpy (x, (const void *) y, strlen (y));
-  printf ("> exm_madvise(x, 1) = %d\n", _madvise((void *)x, 1));
+  printf ("> exm_madvise(x, 1) = %d\n", (*_madvise)((void *)x, 1));
   free (x);
 
 
@@ -73,7 +86,6 @@ main (int argc, void **argv)
   memcpy (x, (const void *) y, strlen (y));
   free (x);
 
-  dlclose (handle);
   printf("> test OK\n");
   return 0;
 }
