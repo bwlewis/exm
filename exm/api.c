@@ -29,7 +29,7 @@ size_t exm_threshold = 2000000000;
  * int exm_set_path(char *path)
  * int exm_madvise(void *addr, int advice)
  * char * exm_lookup(void *addr)
- * char * exm_get_path()
+ * char * exm_get_template()
  */
 
 /* Return the exm library version
@@ -90,21 +90,21 @@ exm_set_path (char *p)
 {
   omp_set_nest_lock (&lock);
   memset (exm_fname_template, 0, EXM_MAX_PATH_LEN);
-  snprintf (exm_fname_template, EXM_MAX_PATH_LEN, "%s/exm%ld_XXXX",
+  snprintf (exm_fname_template, EXM_MAX_PATH_LEN, "%s/exm%ld_XXXXXX",
             p, (long int) getpid ());
   omp_unset_nest_lock (&lock);
   return 0;
 }
 
-/* Return a copy of the exm_fname_template (allocated internally...
- * it is up to the caller to free the returned copy!!
+/* Return a copy of the exm template (allocated internally...
+ * it is up to the caller to free the returned copy!!)
  */
 char *
 exm_get_template ()
 {
   char *s;
   omp_set_nest_lock (&lock);
-  s = strndup (exm_fname_template, EXM_MAX_PATH_LEN);
+  s = strndup(exm_fname_template, EXM_MAX_PATH_LEN);
   omp_unset_nest_lock (&lock);
   return s;
 }

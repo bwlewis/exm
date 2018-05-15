@@ -39,42 +39,6 @@ Rexm_threshold (SEXP J)
 }
 
 /*
- * exm_set_pattern
- *
- * INPUT S SEXP   A mktemp-style tempate string
- * OUTPUT An SEXP integer, 0 for success otherwise error
- * int exm_set_pattern (char *pattern)
- *
- */
-SEXP
-Rexm_set_pattern (SEXP S)
-{
-  SEXP VAL;
-  void *handle;
-  int (*set_pattern)(char *);
-  char *derror;
-  char *temp = (char *)CHAR (STRING_ELT (S, 0));
-
-  handle = dlopen (NULL, RTLD_LAZY);
-  if (!handle) {
-      error ("%s\n", dlerror ());
-      return R_NilValue;
-  }
-  dlerror ();
-  set_pattern = (int (*)(char *))dlsym(handle, "exm_set_pattern");
-  if ((derror = dlerror ()) != NULL)  {
-      error ("%s\n", dlerror ());
-      return R_NilValue;
-  }
-
-  PROTECT (VAL = allocVector(INTSXP, 1));
-  INTEGER(VAL)[0] = (int) (*set_pattern)(temp);
-  UNPROTECT (1);
-  dlclose (handle);
-  return VAL;
-}
-
-/*
  * exm_set_path
  *
  * INPUT S SEXP   A path to map files in
@@ -132,7 +96,7 @@ Rexm_get_template ()
   }
 
   dlclose (handle);
-  s = get_template();
+  s = (*get_template)();
   if(!s) return R_NilValue;
   PROTECT (VAL = mkString(s));
   UNPROTECT (1);
@@ -160,7 +124,7 @@ Rexm_lookup (SEXP OBJECT)
       return R_NilValue;
   }
   dlclose (handle);
-  s = flookup((void *)OBJECT);
+  s = (*flookup)((void *)OBJECT);
   if (!s) return R_NilValue;
   PROTECT (VAL = mkString(s));
   UNPROTECT (1);
@@ -191,7 +155,7 @@ Rexm_madvise (SEXP OBJECT, SEXP ADVICE)
   }
   dlclose (handle);
   PROTECT (VAL = allocVector(INTSXP, 1));
-  INTEGER (VAL)[0] = advise((void *)OBJECT, j);
+  INTEGER (VAL)[0] = (*advise)((void *)OBJECT, j);
   UNPROTECT (1);
   return VAL;
 }
@@ -217,7 +181,7 @@ Rexm_version ()
   }
   dlclose (handle);
   PROTECT (VAL = allocVector(REALSXP, 1));
-  REAL (VAL)[0] = ver();
+  REAL (VAL)[0] = (*ver)();
   UNPROTECT (1);
   return VAL;
 }

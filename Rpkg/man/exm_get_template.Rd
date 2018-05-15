@@ -2,10 +2,10 @@
 % Please edit documentation in R/exm.r
 \name{exm_get_template}
 \alias{exm_get_template}
-\title{Return the exm temp directory/pattern name template}
+\title{Return the exm template}
 \usage{
 exm_get_template()
 }
 \description{
-Return the exm temp directory/pattern name template
+Return the exm template
 }

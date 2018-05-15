@@ -22,13 +22,21 @@ main (int argc, void **argv)
 
   size_t (*set_threshold) (size_t);
   int (*_madvise) (void *, int);
+  char * (*get_template)(void);
+  int (*set_path)(char *);
   void *handle;
   handle = dlopen (NULL, RTLD_LAZY);
   if (!handle) return 2;
   dlerror ();
   set_threshold = (size_t (*)(size_t ))dlsym(handle, "exm_set_threshold");
   _madvise = (int (*)(void *, int))dlsym(handle, "exm_madvise");
+  set_path = (int (*)(char *))dlsym(handle, "exm_set_path");
+  get_template = (char *(*)(void))dlsym(handle, "exm_get_template");
   if ((derror = dlerror ()) == NULL)  (*set_threshold) (SIZE);
+
+  printf("> get_template() %s\n", (*get_template) ());
+  (*set_path)("/tmp");
+  printf("> get_template() %s\n", (*get_template) ());
 
   printf ("> malloc below threshold\n");
   x = malloc (SIZE - 1);

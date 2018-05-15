@@ -14,13 +14,6 @@ exm_threshold <- function(nbytes=0)
   .Call("Rexm_threshold", as.numeric(nbytes), PACKAGE="exm")
 }
 
-#' Set the exm temp file pattern.
-#' @param pattern A valid tmp file pattern containing the string "XXXXXX"
-#' @export
-exm_set_pattern <- function(pattern="fm_XXXXXX")
-{
-  .Call("Rexm_set_pattern", as.character(pattern), PACKAGE="exm")
-}
 
 #' Set the exm temp file path
 #' @param pattern A valid path
@@ -31,7 +24,7 @@ exm_set_path <- function(path="/tmp")
   .Call("Rexm_set_path", as.character(path), PACKAGE="exm")
 }
 
-#' Return the exm temp directory/pattern name template
+#' Return the exm template
 #' @export
 exm_get_template <- function()
 {
