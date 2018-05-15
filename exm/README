@@ -28,3 +28,5 @@ Optionally `make CFLAGS=-DDEBUG` to enabled verbose log messages to stderr.
 
 # API Documentation
 
+See api.c for a list of API functions. There is no library per se, function
+symbols need to be looked up by the calling program. See test.c for examples.
