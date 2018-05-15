@@ -73,11 +73,9 @@ exm_madvise (void *addr, int advice)
   int j = -1;
   struct map *x;
   omp_set_nest_lock (&lock);
-printf("%p %d \n",addr,advice);
   HASH_FIND_PTR (flexmap, &addr, x);
   if (x)
     j = madvise (x->addr, x->length, advice);
-printf("%p %d \n",x,advice);
   omp_unset_nest_lock (&lock);
   return j;
 }
