@@ -23,7 +23,7 @@ to dynamically fine tune out of core allocation details.
 Requirements
 ---
 
-exm requires OpenMP.
+OpenMP
 
 Installing exm
 ---
@@ -40,6 +40,13 @@ Please note that you may get a warning message concerning `__malloc_hook`.
 This is due to a recent change in gcc and is currently being worked through.
 Also note that install will put the executable into /usr/local/bin and the
 required shared object file inot /usr/local/lib.
+
+General usage
+---
+
+```
+exm <program> [program arguments]
+```
 
 Installing the R exm package
 ---

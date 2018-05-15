@@ -17,11 +17,16 @@
 #include <string.h>
 #include <unistd.h>
 #include <omp.h>
+#include <sys/sendfile.h>
 
 #define uthash_malloc(sz) uthash_malloc_(sz)
 #define uthash_free(ptr, sz) uthash_free_(ptr)
 #include "uthash.h"
 #include "exm.h"
+
+#ifndef TMPDIR
+#define TMPDIR "/tmp"
+#endif
 
 extern void *__libc_malloc (size_t size);
 static void exm_init (void) __attribute__ ((constructor));
@@ -79,6 +84,8 @@ exm_init ()
 #endif
   if (READY < 0)
     {
+      snprintf (exm_fname_template, EXM_MAX_PATH_LEN, "%s/exm%ld_XXXXXX",
+                TMPDIR, (long int) getpid ());
       omp_init_nest_lock (&lock);
       READY = 1;
     }
@@ -425,77 +432,48 @@ reallocf (void *ptr, size_t size)
  * slower than simply copying the data with read and write--and much, much
  * slower than zero (user space) copy techniques using sendfile.
  *
- * We provide a custom memcpy that copies exm-allocated regions. We use
- * read/write instead of sendfile because sometimes we only partially copy the
- * files.
- *
- * This routine can only copy entire files or portions of files defined by a
- * fixed-lengh offset (a common use case in R for example). Other kinds of
- * memcpy use the default memcpy.
- *
- * Many additional improvements are possible here. See the inline comments
- * below...
+ * This is a placeholder for a future memcpy that detects when copies are
+ * made between exm-allocated regions. At the moment, this only handles
+ * full region copies.
  */
 void *
 memcpy (void *dest, const void *src, size_t n)
 {
   struct map *SRC, *DEST;
-  void *dest_off;
-  void *src_off;
   int src_fd, dest_fd;
-  char buf[BUFSIZ];
-  ssize_t s;
   if (!exm_default_memcpy)
     exm_default_memcpy =
       (void *(*)(void *, const void *, size_t)) dlsym (RTLD_NEXT, "memcpy");
-  dest_off = (void *) ((char *) dest - exm_offset);
-  src_off = (void *) ((char *) src - exm_offset);
   omp_set_nest_lock (&lock);
-  HASH_FIND_PTR (flexmap, &src_off, SRC);
-  HASH_FIND_PTR (flexmap, &dest_off, DEST);
+/* XXX here we need to see if the src and dest lie within exm allocations.
+ * right now, this only catches the niche/easy case of copying the whole
+ * region.
+ */
+  HASH_FIND_PTR (flexmap, &src, SRC);
+  HASH_FIND_PTR (flexmap, &dest, DEST);
   if (!SRC || !DEST)
     {
-/* One or more of src, dest is not the start of a exm allocation.
- * Default in this case to the usual memcpy.
- */
       omp_unset_nest_lock (&lock);
       return (*exm_default_memcpy) (dest, src, n);
     }
-  if (SRC->length != (n + exm_offset) || DEST->length != (n + exm_offset))
+  if (SRC->length != n || DEST->length != n)
     {
-/* Our efficient methods below require copy of a full region.
- * Default in this case to the usual memcpy.
- */
       omp_unset_nest_lock (&lock);
       return (*exm_default_memcpy) (dest, src, n);
     }
 #if defined(DEBUG) || defined(DEBUG2)
-  fprintf (stderr, "CAZART! Exm memcopy address %p src_addr %p of size %lu\n",
+  fprintf (stderr, "Exm memcopy address %p src_addr %p of size %lu\n",
            SRC->addr, src, (unsigned long int) SRC->length);
 #endif
-/* XXX
-what we really want here is to take the two file mappings and overlay them
-explicitly at the file system or block device level. That is, put the SRC file
-directly under the DEST file, then mark that it's a cow.
-
-The problem with the OS cow is that changes to DEST will go into the
-buffer cache instead of a file. If those changes are huge, they will
-swap--mostly defeating our system.
-
-So we need a magic overlay FS that avoids the buffer cache/swap.
-for now the best we can do is a reasonably efficient copy
-*/
+/*  Consider replacing with a layered copy on write approach?  */
   src_fd = open (SRC->path, O_RDONLY);
   dest_fd = open (DEST->path, O_RDWR);
   omp_unset_nest_lock (&lock);
-  lseek (src_fd, exm_offset, SEEK_SET);
-  lseek (dest_fd, exm_offset, SEEK_SET);
-  while ((s = read (src_fd, buf, BUFSIZ)) > 0)
-    write (dest_fd, buf, s);
+  sendfile (dest_fd, src_fd, 0, n);     // XXX how to handle error?
+  close (dest_fd);
+  close (src_fd);
   return dest;
 }
-
-
 
 
 /* calloc is a special case.  dlsym ultimately calls calloc, thus a direct
