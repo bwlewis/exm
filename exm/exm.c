@@ -209,8 +209,8 @@ malloc (size_t size)
   x = m->addr;
   close (fd);
 #if defined(DEBUG) || defined(DEBUG1)
-  fprintf (stderr, "Exm malloc address %p, size %lu, file  %s\n", m->addr,
-           (unsigned long int) m->length, m->path);
+  fprintf (stderr, "Exm malloc address %p, size %lu, file  %s, pid %ld\n", m->addr,
+           (unsigned long int) m->length, m->path, (long int)m->pid);
 #endif
 /* Check to make sure that this address is not already in the hash. If it is,
  * then something is terribly wrong and we must bail.
@@ -248,26 +248,23 @@ free (void *ptr)
 #endif
       omp_set_nest_lock (&lock);
       HASH_FIND_PTR (flexmap, &ptr, m);
-      if (m)
-        {
-#if defined(DEBUG) || defined(DEBUG1)
-          fprintf (stderr, "Exm unmap address %p of size %lu\n", ptr,
-                   (unsigned long int) m->length);
-#endif
-          munmap (ptr, m->length);
 /* Make sure a child process does not accidentally delete a mapping owned
  * by a parent.
  */
-          pid = getpid ();
-          if (pid == m->pid)
-            {
+      pid = getpid ();
+      if (m && pid == m->pid)
+        {
 #if defined(DEBUG) || defined(DEBUG1)
-              fprintf (stderr, "Exm ulink %p/%s\n", ptr, m->path);
+          fprintf (stderr, "Exm free unmap address %p of size %lu pid %ld\n", ptr,
+                   (unsigned long int) m->length, (long int) pid);
 #endif
-              unlink (m->path);
-              HASH_DEL (flexmap, m);
-              freemap (m);
-            }
+          munmap (ptr, m->length);
+#if defined(DEBUG) || defined(DEBUG1)
+          fprintf (stderr, "Exm ulink %p/%s\n", ptr, m->path);
+#endif
+          unlink (m->path);
+          HASH_DEL (flexmap, m);
+          freemap (m);
           omp_unset_nest_lock (&lock);
           return;
         }
