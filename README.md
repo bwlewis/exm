@@ -12,8 +12,7 @@ Exm provides utilities to selectively override the memory allocator,
 allowing users to create out-of-core data structures that may be much
 larger than available RAM.
 
-Description
----
+## Description
 
 Exm is a simple tool for out-of-core (OOC) computing.  It is launched as a
 command line utility, taking an application as an argument. All memory
@@ -22,13 +21,11 @@ file. When data are not needed, they are stored on disk. It aims to be both
 process- and thread-safe. It includes a simple API that can be used by programs
 to dynamically fine tune out of core allocation details.
 
-Requirements
----
+## Requirements
 
 OpenMP
 
-Installing exm
----
+## Installing exm
 
 The exm package can be installed by navigating to the 
 `exm` directory using the following commands:
@@ -43,8 +40,7 @@ This is due to a recent change in gcc and is currently being worked through.
 Also note that install will put the executable into /usr/local/bin and the
 required shared object file inot /usr/local/lib.
 
-General usage
----
+## General use
 
 ```
 exm <program> [program arguments]
@@ -55,11 +51,11 @@ are disk-based in TMPDIR:
 EXM_THRESHOLD=<bytes> exm <program> [program arguments]
 ```
 
-Installing the R exm package
----
+# The R exm package
 
-After installing exm the R exm package can be installed by
-the following commands in a shell:
+The R exm package provides access from R to the exm API for setting
+data paths and memory allocation thresholds. It can be installed from
+the command line with:
 
 ```bash
 R CMD build Rpkg
@@ -69,8 +65,7 @@ R CMD INSTALL exm_0.1.tar.gz
 The package documentation provides more information about how to use the 
 R exm package.
 
-Using exm with R
----
+## Using exm with R
 
 Start an application in exm by specifying the application as an argument
 
