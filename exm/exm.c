@@ -6,6 +6,7 @@
 
 */
 #define _GNU_SOURCE
+#include <syslog.h>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -79,14 +80,12 @@ static int READY = -1;
 static void
 exm_init ()
 {
-#ifdef DEBUG1
-  write (2, "INIT \n", 6);
-#endif
   if (READY < 0)
     {
       snprintf (exm_data_path, EXM_MAX_PATH_LEN, "%s", TMPDIR);
       omp_init_nest_lock (&lock);
       READY = 1;
+      openlog ("exm", LOG_PERROR | LOG_PID, LOG_USER);
     }
   if (!exm_hook)
     exm_hook = __libc_malloc;
@@ -107,15 +106,15 @@ exm_finalize ()
   HASH_ITER (hh, flexmap, m, tmp)
   {
 #if defined(DEBUG) || defined(DEBUG1)
-    fprintf (stderr, "Exm finalize unmap address %p of size %lu\n", m->addr,
-             (unsigned long int) m->length);
+    syslog (LOG_DEBUG, "finalize unmap address %p of size %lu\n", m->addr,
+            (unsigned long int) m->length);
 #endif
     munmap (m->addr, m->length);
     pid = getpid ();
     if (pid == m->pid)
       {
 #if defined(DEBUG) || defined(DEBUG1)
-        fprintf (stderr, "Exm finalize unlink %p:%s\n", m->addr, m->path);
+        syslog (LOG_DEBUG, "finalize unlink %p:%s\n", m->addr, m->path);
 #endif
         unlink (m->path);
         HASH_DEL (flexmap, m);
@@ -124,7 +123,7 @@ exm_finalize ()
   }
   omp_unset_nest_lock (&lock);
 #if defined(DEBUG) || defined(DEBUG1)
-  fprintf (stderr, "Exm finalized from process %ld\n", (long int) getpid ());
+  syslog (LOG_DEBUG, "finalized\n");
 #endif
 }
 
@@ -134,7 +133,7 @@ void
 freemap (struct map *m)
 {
 #if defined(DEBUG) || defined(DEBUG1)
-  write (2, "Exm freemap\n", 12);
+  syslog (LOG_DEBUG, "freemap\n");
 #endif
   if (m)
     {
@@ -176,7 +175,7 @@ malloc (size_t size)
     {
       x = (*exm_default_malloc) (size);
 #ifdef DEBUG1
-      fprintf (stderr, "malloc %p\n", x);
+      syslog (LOG_DEBUG, "malloc %p\n", x);
 #endif
       if (x)
         return x;               // The usual malloc
@@ -210,9 +209,8 @@ malloc (size_t size)
   x = m->addr;
   close (fd);
 #if defined(DEBUG) || defined(DEBUG1)
-  fprintf (stderr, "Exm malloc address %p, size %lu, file  %s, pid %ld\n",
-           m->addr, (unsigned long int) m->length, m->path,
-           (long int) m->pid);
+  syslog (LOG_DEBUG, "malloc address %p, size %lu, file  %s\n",
+          m->addr, (unsigned long int) m->length, m->path);
 #endif
 /* Check to make sure that this address is not already in the hash. If it is,
  * then something is terribly wrong and we must bail.
@@ -230,7 +228,7 @@ malloc (size_t size)
       HASH_ADD_PTR (flexmap, addr, m);
     }
 #if defined(DEBUG) || defined(DEBUG1)
-  fprintf (stderr, "Exm hash count = %u\n", HASH_COUNT (flexmap));
+  syslog (LOG_DEBUG, "hash count = %u\n", HASH_COUNT (flexmap));
 #endif
   omp_unset_nest_lock (&lock);
   return x;
@@ -246,7 +244,7 @@ free (void *ptr)
   if (READY > 0)
     {
 #ifdef DEBUG1
-      fprintf (stderr, "Exm free %p\n", ptr);
+      syslog (LOG_DEBUG, "free %p\n", ptr);
 #endif
       omp_set_nest_lock (&lock);
       HASH_FIND_PTR (flexmap, &ptr, m);
@@ -257,16 +255,15 @@ free (void *ptr)
       if (m)
         {
 #if defined(DEBUG) || defined(DEBUG1)
-          fprintf (stderr,
-                   "Exm free unmap address %p of size %lu pid %ld %ld\n", ptr,
-                   (unsigned long int) m->length, (long int) pid,
-                   (long int) m->pid);
+          syslog (LOG_DEBUG,
+                  "free unmap address %p of size %lu %ld\n", ptr,
+                  (unsigned long int) m->length, (long int) m->pid);
 #endif
           munmap (ptr, m->length);
           if (pid == m->pid)
             {
 #if defined(DEBUG) || defined(DEBUG1)
-              fprintf (stderr, "Exm free unlink %p:%s\n", ptr, m->path);
+              syslog (LOG_DEBUG, "free unlink %p:%s\n", ptr, m->path);
 #endif
               unlink (m->path);
               HASH_DEL (flexmap, m);
@@ -292,7 +289,7 @@ valloc (size_t size)
   if (READY > 0 && size > exm_threshold)
     {
 #if defined(DEBUG) || defined(DEBUG1)
-      fprintf (stderr, "Exm valloc...handing off to exm malloc\n");
+      syslog (LOG_DEBUG, "valloc...handing off to exm malloc\n");
 #endif
       return malloc (size);
     }
@@ -314,7 +311,7 @@ realloc (void *ptr, size_t size)
   pid_t pid;
   size_t copylen;
 #ifdef DEBUG1
-  fprintf (stderr, "Exm realloc\n");
+  syslog (LOG_DEBUG, "realloc\n");
 #endif
 
 /* Handle two special realloc cases: */
@@ -401,8 +398,8 @@ realloc (void *ptr, size_t size)
           x = m->addr;
           close (fd);
 #if defined(DEBUG) || defined(DEBUG1)
-          fprintf (stderr, "Exm realloc address %p size %lu\n", ptr,
-                   (unsigned long int) m->length);
+          syslog (LOG_DEBUG, "realloc address %p size %lu\n", ptr,
+                  (unsigned long int) m->length);
 #endif
           omp_unset_nest_lock (&lock);
           return x;
@@ -470,8 +467,8 @@ memcpy (void *dest, const void *src, size_t n)
       return (*exm_default_memcpy) (dest, src, n);
     }
 #if defined(DEBUG) || defined(DEBUG1)
-  fprintf (stderr, "Exm memcopy address %p src_addr %p of size %lu\n",
-           SRC->addr, src, (unsigned long int) SRC->length);
+  syslog (LOG_DEBUG, "memcopy address %p src_addr %p of size %lu\n",
+          SRC->addr, src, (unsigned long int) SRC->length);
 #endif
 /*  Consider replacing with a layered copy on write approach?  */
   src_fd = open (SRC->path, O_RDONLY);
@@ -498,7 +495,7 @@ calloc (size_t count, size_t size)
   if (READY > 0 && n > exm_threshold)
     {
 #if defined(DEBUG) || defined(DEBUG1)
-      fprintf (stderr, "Exm calloc...handing off to exm malloc\n");
+      syslog (LOG_DEBUG, "calloc...handing off to exm malloc\n");
 #endif
       return malloc (n);
     }
