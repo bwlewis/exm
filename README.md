@@ -15,10 +15,10 @@ larger than available RAM.
 Description
 ---
 
-Exm is a general, transparent tool for out-of-core (OOC) computing.  It is
-launched as a command line utility, taking an application as an argument. All
-memory allocations larger than a specified threshold are memory-mapped to a
-binary file. When data are not needed, they are stored on disk. It is both
+Exm is a simple tool for out-of-core (OOC) computing.  It is launched as a
+command line utility, taking an application as an argument. All memory
+allocations larger than a specified threshold are memory-mapped to a binary
+file. When data are not needed, they are stored on disk. It aims to be both
 process- and thread-safe. It includes a simple API that can be used by programs
 to dynamically fine tune out of core allocation details.
 
