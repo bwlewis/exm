@@ -10,8 +10,6 @@
 #include <dlfcn.h>
 #include <signal.h>
 
-void testfunc (void);
-
 void
 check_error ()
 {
@@ -103,6 +101,24 @@ main (int argc, void **argv)
   sleep (1);
 //  kill (p, SIGTERM);  // commented out part: a leak. finalize not run when
 //  process is terminated by a signal (gcc destructor) XXX.
+// XXX conversely, if the parent deletes the backing data file/mmap
+// then the child will populate then what? -- see below
+  sprintf (x, "parent");
+  printf ("> hello from %s process address %p\n", (char *) x, x);
+  free (x);
+  wait (0);
+
+  printf ("> malloc above threshold + fork test 2\n");
+  x = malloc (SIZE + 1);
+  memcpy (x, (const void *) y, strlen (y));
+  p = fork ();
+  if (p == 0)                   // child
+    {
+      sleep (2);
+      sprintf (x, "child");
+      printf ("> hello from %s process address %p\n", (char *) x, x);
+      exit (0);
+    }
   sprintf (x, "parent");
   printf ("> hello from %s process address %p\n", (char *) x, x);
   free (x);
