@@ -76,11 +76,3 @@ exm R
 The R package memory-mapped files are stored in the session R temporary
 directory by default. This parameter along with others can be set using the
 package functions.
-
-Support
----
-
-1. exm is supported on Linux with OS X support on the way.
-2. The development home of this project can be found at: [https://github.com/kaneplusplus/exm](https://github.com/kaneplusplus/exm)
-3. Contributions are welcome.
-4. For more information contact Michael Kane at [kaneplusplus@gmail.com](kaneplusplus@gmail.com).
