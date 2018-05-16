@@ -174,7 +174,7 @@ malloc (size_t size)
   if (!exm_default_malloc)
     exm_default_malloc = (void *(*)(size_t)) dlsym (RTLD_NEXT, "malloc");
 
-  if (size < exm_threshold || READY < 1)
+  if (size < exm_alloc_threshold || READY < 1)
     {
       x = (*exm_default_malloc) (size);
 #ifdef DEBUG1
@@ -287,7 +287,7 @@ free (void *ptr)
 void *
 valloc (size_t size)
 {
-  if (READY > 0 && size > exm_threshold)
+  if (READY > 0 && size > exm_alloc_threshold)
     {
 #if defined(DEBUG) || defined(DEBUG1)
       syslog (LOG_DEBUG, "valloc...handing off to exm malloc\n");
@@ -493,7 +493,7 @@ calloc (size_t count, size_t size)
 {
   void *x;
   size_t n = count * size;
-  if (READY > 0 && n > exm_threshold)
+  if (READY > 0 && n > exm_alloc_threshold)
     {
 #if defined(DEBUG) || defined(DEBUG1)
       syslog (LOG_DEBUG, "calloc...handing off to exm malloc\n");

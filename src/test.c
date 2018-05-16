@@ -36,7 +36,7 @@ main (int argc, void **argv)
   handle = dlopen (NULL, RTLD_LAZY);
   if (!handle)
     return 2;
-  set_threshold = (size_t (*)(size_t)) dlsym (handle, "exm_set_threshold");
+  set_threshold = (size_t (*)(size_t)) dlsym (handle, "exm_threshold");
   check_error ();
   exm_madvise = (int (*)(void *, int)) dlsym (handle, "exm_madvise");
   check_error ();

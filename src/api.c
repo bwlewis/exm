@@ -17,7 +17,7 @@
 
 /* exm_path is initialized in exm.c:exm_init() */
 char exm_data_path[EXM_MAX_PATH_LEN];
-size_t exm_threshold = 2000000000;
+size_t exm_alloc_threshold = 2000000000;
 
 /* The next functions allow applications to inspect and change default
  * settings. The application must dynamically locate them with dlsym after
@@ -25,7 +25,7 @@ size_t exm_threshold = 2000000000;
  *
  * API functions defined below include:
  * double exm_version()
- * size_t exm_set_threshold(size_t j)
+ * size_t exm_threshold(size_t j)
  * char * exm_path(char *path)
  * char * exm_lookup(void *addr)
  * int exm_madvise(void *addr, int advice)
@@ -48,15 +48,15 @@ exm_version (char *v)
  * (return value): exm_threshold size on exit
  */
 size_t
-exm_set_threshold (size_t j)
+exm_threshold (size_t j)
 {
   if (j > 0)
     {
       omp_set_nest_lock (&lock);
-      exm_threshold = j;
+      exm_alloc_threshold = j;
       omp_unset_nest_lock (&lock);
     }
-  return exm_threshold;
+  return exm_alloc_threshold;
 }
 
 /* Set madvise option for an exm-allocated region
