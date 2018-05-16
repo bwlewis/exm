@@ -49,6 +49,11 @@ General usage
 ```
 exm <program> [program arguments]
 ```
+Optionally set a default threshold size, beyond which memory allocations
+are disk-based in TMPDIR:
+```
+EXM_THRESHOLD=<bytes> exm <program> [program arguments]
+```
 
 Installing the R exm package
 ---
@@ -64,7 +69,7 @@ R CMD INSTALL exm_0.1.tar.gz
 The package documentation provides more information about how to use the 
 R exm package.
 
-Using exm
+Using exm with R
 ---
 
 Start an application in exm by specifying the application as an argument
