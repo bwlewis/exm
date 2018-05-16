@@ -95,20 +95,18 @@ main (int argc, void **argv)
   pid_t p = fork ();
   if (p == 0)                   // child
     {
-      x = realloc (x, SIZE + 10);
       sprintf (x, "child");
-      printf ("> hello from %s process\n", (char *) x);
+      printf ("> hello from %s process address %p\n", (char *) x, x);
 //      sleep (2);
       exit (0);
     }
-//  sleep (1);
-//  kill (p, SIGTERM);  // commented out part: a leak. finalizer not run when
-//  process is terminated by a signal. Note that this is likely a problem
-//  for R's parallel package because that terminates children with SIGTERM.
-  wait (0);
+  sleep (1);
+//  kill (p, SIGTERM);  // commented out part: a leak. finalize not run when
+//  process is terminated by a signal (gcc destructor) XXX.
   sprintf (x, "parent");
-  printf ("> hello from %s process\n", (char *) x);
+  printf ("> hello from %s process address %p\n", (char *) x, x);
   free (x);
+  wait (0);
 
   printf ("> test OK\n");
   return 0;

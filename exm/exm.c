@@ -99,6 +99,9 @@ exm_init ()
 static void
 exm_finalize ()
 {
+#if defined(DEBUG) || defined(DEBUG1)
+  syslog (LOG_DEBUG, "finalize READY=%d\n", READY);
+#endif
   struct map *m, *tmp;
   pid_t pid;
   omp_set_nest_lock (&lock);
@@ -248,9 +251,7 @@ free (void *ptr)
 #endif
       omp_set_nest_lock (&lock);
       HASH_FIND_PTR (flexmap, &ptr, m);
-/* Make sure a child process does not accidentally delete a mapping owned
- * by a parent.
- */
+/* Make sure a child process does not delete a parent mapping */
       pid = getpid ();
       if (m)
         {
