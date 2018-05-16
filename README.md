@@ -34,10 +34,12 @@ The exm package can be installed by navigating to the
 sudo make install
 ```
 
-Please note that you may get a warning message concerning `__malloc_hook`.
-This is due to a recent change in gcc and is currently being worked through.
-Also note that install will put the executable into /usr/local/bin and the
-required shared object file inot /usr/local/lib.
+Default install locations are executables in `/usr/local/bin` and libraries in
+`/usr/local/lib`. You can change the `/usr/local` part by setting the
+environment variable `PREFIX`. Uninstall with
+```bash
+sudo make uninstall
+```
 
 ## General use
 
