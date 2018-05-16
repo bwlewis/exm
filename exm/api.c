@@ -89,14 +89,15 @@ char *
 exm_path (char *p)
 {
   omp_set_nest_lock (&lock);
-  if(p == NULL)
-  {
-    p = strndup(exm_data_path, EXM_MAX_PATH_LEN);
-  } else
-  {
-    memset (exm_data_path, 0, EXM_MAX_PATH_LEN);
-    snprintf (exm_data_path, EXM_MAX_PATH_LEN, "%s", p);
-  }
+  if (p == NULL)
+    {
+      p = strndup (exm_data_path, EXM_MAX_PATH_LEN);
+    }
+  else
+    {
+      memset (exm_data_path, 0, EXM_MAX_PATH_LEN);
+      snprintf (exm_data_path, EXM_MAX_PATH_LEN, "%s", p);
+    }
   omp_unset_nest_lock (&lock);
   return p;
 }

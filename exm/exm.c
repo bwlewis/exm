@@ -124,7 +124,7 @@ exm_finalize ()
   }
   omp_unset_nest_lock (&lock);
 #if defined(DEBUG) || defined(DEBUG1)
-  fprintf (stderr, "Exm finalized\n");
+  fprintf (stderr, "Exm finalized from process %ld\n", (long int) getpid ());
 #endif
 }
 
@@ -134,7 +134,7 @@ void
 freemap (struct map *m)
 {
 #if defined(DEBUG) || defined(DEBUG1)
-  write(2, "Exm freemap\n", 12);
+  write (2, "Exm freemap\n", 12);
 #endif
   if (m)
     {
@@ -192,7 +192,7 @@ malloc (size_t size)
   memset (m->path, 0, EXM_MAX_PATH_LEN);
   omp_set_nest_lock (&lock);
   snprintf (m->path, EXM_MAX_PATH_LEN, "%s/exm%ld_XXXXXX",
-              exm_data_path, (long int) getpid ());
+            exm_data_path, (long int) getpid ());
   m->length = size;
   fd = mkostemp (m->path, O_RDWR | O_CREAT);
   j = ftruncate (fd, m->length);
@@ -210,8 +210,9 @@ malloc (size_t size)
   x = m->addr;
   close (fd);
 #if defined(DEBUG) || defined(DEBUG1)
-  fprintf (stderr, "Exm malloc address %p, size %lu, file  %s, pid %ld\n", m->addr,
-           (unsigned long int) m->length, m->path, (long int)m->pid);
+  fprintf (stderr, "Exm malloc address %p, size %lu, file  %s, pid %ld\n",
+           m->addr, (unsigned long int) m->length, m->path,
+           (long int) m->pid);
 #endif
 /* Check to make sure that this address is not already in the hash. If it is,
  * then something is terribly wrong and we must bail.
@@ -256,19 +257,21 @@ free (void *ptr)
       if (m)
         {
 #if defined(DEBUG) || defined(DEBUG1)
-          fprintf (stderr, "Exm free unmap address %p of size %lu pid %ld %ld\n", ptr,
-                   (unsigned long int) m->length, (long int) pid, (long int) m->pid);
+          fprintf (stderr,
+                   "Exm free unmap address %p of size %lu pid %ld %ld\n", ptr,
+                   (unsigned long int) m->length, (long int) pid,
+                   (long int) m->pid);
 #endif
           munmap (ptr, m->length);
           if (pid == m->pid)
-          {
+            {
 #if defined(DEBUG) || defined(DEBUG1)
-            fprintf (stderr, "Exm free unlink %p:%s\n", ptr, m->path);
+              fprintf (stderr, "Exm free unlink %p:%s\n", ptr, m->path);
 #endif
-            unlink (m->path);
-            HASH_DEL (flexmap, m);
-            freemap (m);
-          }
+              unlink (m->path);
+              HASH_DEL (flexmap, m);
+              freemap (m);
+            }
           omp_unset_nest_lock (&lock);
           return;
         }
@@ -359,7 +362,7 @@ realloc (void *ptr, size_t size)
               m->path = (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
               memset (m->path, 0, EXM_MAX_PATH_LEN);
               snprintf (m->path, EXM_MAX_PATH_LEN, "%s/exm%ld_XXXXXX",
-                          exm_data_path, (long int) getpid ());
+                        exm_data_path, (long int) getpid ());
               m->length = size;
               copylen = m->length;
               if (y->length < copylen)

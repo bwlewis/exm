@@ -15,8 +15,9 @@ void
 check_error ()
 {
   char *derror;
-  if ((derror = dlerror ()) == NULL) return;
-  fprintf(stderr, "%s\n", derror);
+  if ((derror = dlerror ()) == NULL)
+    return;
+  fprintf (stderr, "%s\n", derror);
   _exit (1);
 }
 
@@ -31,25 +32,26 @@ main (int argc, void **argv)
 
   size_t (*set_threshold) (size_t);
   int (*exm_madvise) (void *, int);
-  char * (*exm_path)(char *);
+  char *(*exm_path) (char *);
   void *handle;
   handle = dlopen (NULL, RTLD_LAZY);
-  if (!handle) return 2;
-  set_threshold = (size_t (*)(size_t ))dlsym(handle, "exm_set_threshold");
+  if (!handle)
+    return 2;
+  set_threshold = (size_t (*)(size_t)) dlsym (handle, "exm_set_threshold");
   check_error ();
-  exm_madvise = (int (*)(void *, int))dlsym(handle, "exm_madvise");
+  exm_madvise = (int (*)(void *, int)) dlsym (handle, "exm_madvise");
   check_error ();
-  exm_path = (char *(*)(char *))dlsym(handle, "exm_path");
+  exm_path = (char *(*)(char *)) dlsym (handle, "exm_path");
   check_error ();
   dlclose (handle);
 
-  printf("> set_threshold() %lu\n", (*set_threshold) (SIZE));
+  printf ("> set_threshold() %lu\n", (*set_threshold) (SIZE));
 
-  path = (*exm_path)(NULL);
-  printf("> exm_path(NULL) %s\n", path);
-  free(path);
-  path = (*exm_path)("/tmp");
-  printf("> exm_path(\"/tmp\") %s\n", path);
+  path = (*exm_path) (NULL);
+  printf ("> exm_path(NULL) %s\n", path);
+  free (path);
+  path = (*exm_path) ("/tmp");
+  printf ("> exm_path(\"/tmp\") %s\n", path);
 
   printf ("> malloc below threshold\n");
   x = malloc (SIZE - 1);
@@ -59,7 +61,7 @@ main (int argc, void **argv)
   printf ("> malloc above threshold\n");
   x = malloc (SIZE + 1);
   memcpy (x, (const void *) y, strlen (y));
-  printf ("> exm_madvise(x, 1) = %d\n", (*exm_madvise)((void *)x, 1));
+  printf ("> exm_madvise(x, 1) = %d\n", (*exm_madvise) ((void *) x, 1));
   free (x);
 
 
@@ -89,18 +91,18 @@ main (int argc, void **argv)
   printf ("> malloc above threshold + fork\n");
   x = malloc (SIZE + 1);
   memcpy (x, (const void *) y, strlen (y));
-  pid_t p = fork();
-  if(p == 0) // child
-  { 
-    sprintf(x, "child");
-    printf("> hello from %s process\n", (char *)x);
-    exit(0);
-  }
-  wait(0);
-  sprintf(x, "parent");
-  printf("> hello from %s process\n", (char *)x);
+  pid_t p = fork ();
+  if (p == 0)                   // child
+    {
+      sprintf (x, "child");
+      printf ("> hello from %s process\n", (char *) x);
+      exit (0);
+    }
+  wait (0);
+  sprintf (x, "parent");
+  printf ("> hello from %s process\n", (char *) x);
   free (x);
 
-  printf("> test OK\n");
+  printf ("> test OK\n");
   return 0;
 }
