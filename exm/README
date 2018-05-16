@@ -24,8 +24,9 @@ sudo make install
 exm <program>
 ```
 
-Optionally `make CFLAGS=-DDEBUG` to enable basic log messages to stderr.
-Optionally `make CFLAGS=-DDEBUG1` to enable more verbose log messages to stderr.
+Optionally `make CFLAGS=-DDEBUG` to enable basic log messages to stderr and the
+system log.  Optionally `make CFLAGS=-DDEBUG1` to enable more verbose log
+messages to stderr and the system log.
 
 
 # API Documentation
