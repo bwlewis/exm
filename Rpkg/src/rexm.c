@@ -24,7 +24,7 @@ Rexm_threshold (SEXP J)
       return R_NilValue;
   }
   dlerror ();
-  set_threshold = (size_t (*)(size_t ))dlsym(handle, "exm_set_threshold");
+  set_threshold = (size_t (*)(size_t ))dlsym(handle, "exm_threshold");
   if ((derror = dlerror ()) != NULL)  {
       error ("%s\n", dlerror ());
       return R_NilValue;

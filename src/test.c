@@ -44,6 +44,7 @@ main (int argc, void **argv)
   check_error ();
   dlclose (handle);
 
+  printf ("> initial threshold %lu\n", (*set_threshold) (0));
   printf ("> set_threshold() %lu\n", (*set_threshold) (SIZE));
 
   path = (*exm_path) (NULL);

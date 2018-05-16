@@ -86,6 +86,14 @@ exm_init ()
       omp_init_nest_lock (&lock);
       READY = 1;
       openlog ("exm", LOG_PERROR | LOG_PID, LOG_USER);
+      char *endptr, *EXM_THRESHOLD = getenv ("EXM_THRESHOLD");
+      if (EXM_THRESHOLD != NULL)
+        {
+          errno = 0;
+          unsigned long _threshold = strtoul (EXM_THRESHOLD, &endptr, 0);
+          if (errno == 0)
+            exm_alloc_threshold = (size_t) _threshold;
+        }
     }
   if (!exm_hook)
     exm_hook = __libc_malloc;
