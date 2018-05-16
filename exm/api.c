@@ -79,7 +79,6 @@ exm_madvise (void *addr, int advice)
   return j;
 }
 
-
 /* Set/retrieve the file directory path character string
  * INPUT p, a proposed new path string or NULL
  * Returns string with path set. When input is NULL, allocates output
@@ -101,7 +100,6 @@ exm_path (char *p)
   omp_unset_nest_lock (&lock);
   return p;
 }
-
 
 /* Lookup an address, returning NULL if the address is not found or a strdup
  * locally-allocated copy of the backing file path for the address. No guarantee

@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <signal.h>
 
 void testfunc (void);
 
@@ -94,10 +95,16 @@ main (int argc, void **argv)
   pid_t p = fork ();
   if (p == 0)                   // child
     {
+      x = realloc (x, SIZE + 10);
       sprintf (x, "child");
       printf ("> hello from %s process\n", (char *) x);
+//      sleep (2);
       exit (0);
     }
+//  sleep (1);
+//  kill (p, SIGTERM);  // commented out part: a leak. finalizer not run when
+//  process is terminated by a signal. Note that this is likely a problem
+//  for R's parallel package because that terminates children with SIGTERM.
   wait (0);
   sprintf (x, "parent");
   printf ("> hello from %s process\n", (char *) x);
