@@ -28,10 +28,9 @@ OpenMP
 ## Installing exm
 
 The exm package can be installed by navigating to the 
-`exm` directory using the following commands:
+`src` directory using the following commands:
 
 ```bash
-make all
 sudo make install
 ```
 
@@ -42,12 +41,12 @@ required shared object file inot /usr/local/lib.
 
 ## General use
 
-```
+```bash
 exm <program> [program arguments]
 ```
 Optionally set a default threshold size, beyond which memory allocations
 are disk-based in TMPDIR:
-```
+```bash
 EXM_THRESHOLD=<bytes> exm <program> [program arguments]
 ```
 
