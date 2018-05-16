@@ -7,6 +7,8 @@
 ```
 
 Use the EXM_HOME environment variable to set the path to the libexm.so library.
+Exm defaults to using the TMPDIR environment variable to store data.  Use the
+exm_path API function to dynamically change the data path.
 Quick example:
 
 ```

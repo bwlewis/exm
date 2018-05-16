@@ -6,8 +6,8 @@
 
 /*
  * exm_threshold
- * INPUT * J SEXP   Threshold value or R_NilValue
- * OUTPUT * SEXP     Threshold set point or R_NilValue on error
+ * INPUT J SEXP   Threshold value or R_NilValue
+ * OUTPUT  SEXP   Threshold set point or R_NilValue on error
  */
 SEXP
 Rexm_threshold (SEXP J)
@@ -43,15 +43,14 @@ Rexm_threshold (SEXP J)
  *
  * INPUT S SEXP   A path to map files in
  * OUTPUT An SEXP integer, 0 for success otherwise error
- * int exm_set_path (char *path)
  *
  */
 SEXP
 Rexm_set_path (SEXP S)
 {
-  SEXP VAL;
   void *handle;
-  int (*set_path)(char *);
+  char * (*exm_path)(char *);
+  char *s;
   char *derror;
   char *temp = (char *)CHAR (STRING_ELT (S, 0));
 
@@ -61,25 +60,23 @@ Rexm_set_path (SEXP S)
       return R_NilValue;
   }
   dlerror ();
-  set_path = (int (*)(char *))dlsym(handle, "exm_set_path");
+  exm_path = (char *(*)(char *))dlsym(handle, "exm_path");
   if ((derror = dlerror ()) != NULL)  {
       return R_NilValue;
   }
-
-  PROTECT (VAL = allocVector(INTSXP, 1));
-  INTEGER(VAL)[0] = (int) (*set_path)(temp);
-  UNPROTECT (1);
   dlclose (handle);
-  return VAL;
+  s = (*exm_path)(temp);
+  if(!s) return R_NilValue;
+  return S;
 }
 
 
 SEXP
-Rexm_get_template ()
+Rexm_get_path ()
 {
   SEXP VAL;
   void *handle;
-  char * (*get_template)(void);
+  char * (*exm_path)(char *);
   char *derror;
   char *s;
 
@@ -89,14 +86,13 @@ Rexm_get_template ()
       return R_NilValue;
   }
   dlerror ();
-  get_template = (char *(*)(void))dlsym(handle, "exm_get_template");
+  exm_path = (char *(*)(char *))dlsym(handle, "exm_path");
   if ((derror = dlerror ()) != NULL)  {
       error ("%s\n", dlerror ());
       return R_NilValue;
   }
-
   dlclose (handle);
-  s = (*get_template)();
+  s = (*exm_path)(NULL);
   if(!s) return R_NilValue;
   PROTECT (VAL = mkString(s));
   UNPROTECT (1);

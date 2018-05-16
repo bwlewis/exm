@@ -15,8 +15,8 @@
 #include "uthash.h"
 #include "exm.h"
 
-/* exm_fname_template is initialized in exm.c:exm_init() */
-char exm_fname_template[EXM_MAX_PATH_LEN];
+/* exm_path is initialized in exm.c:exm_init() */
+char exm_data_path[EXM_MAX_PATH_LEN];
 size_t exm_threshold = 2000000000;
 
 /* The next functions allow applications to inspect and change default
@@ -26,10 +26,9 @@ size_t exm_threshold = 2000000000;
  * API functions defined below include:
  * double exm_version()
  * size_t exm_set_threshold(size_t j)
- * int exm_set_path(char *path)
- * int exm_madvise(void *addr, int advice)
+ * char * exm_path(char *path)
  * char * exm_lookup(void *addr)
- * char * exm_get_template()
+ * int exm_madvise(void *addr, int advice)
  */
 
 /* Return the exm library version
@@ -81,33 +80,27 @@ exm_madvise (void *addr, int advice)
 }
 
 
-/* Set the file directory path character string
- * INPUT p, a proposed new path string
- * Returns 0 on sucess, a negative number otherwise.
- */
-int
-exm_set_path (char *p)
-{
-  omp_set_nest_lock (&lock);
-  memset (exm_fname_template, 0, EXM_MAX_PATH_LEN);
-  snprintf (exm_fname_template, EXM_MAX_PATH_LEN, "%s/exm%ld_XXXXXX",
-            p, (long int) getpid ());
-  omp_unset_nest_lock (&lock);
-  return 0;
-}
-
-/* Return a copy of the exm template (allocated internally...
- * it is up to the caller to free the returned copy!!)
+/* Set/retrieve the file directory path character string
+ * INPUT p, a proposed new path string or NULL
+ * Returns string with path set. When input is NULL, allocates output
+ * and it is up to the caller to free the returned copy!!
  */
 char *
-exm_get_template ()
+exm_path (char *p)
 {
-  char *s;
   omp_set_nest_lock (&lock);
-  s = strndup(exm_fname_template, EXM_MAX_PATH_LEN);
+  if(p == NULL)
+  {
+    p = strndup(exm_data_path, EXM_MAX_PATH_LEN);
+  } else
+  {
+    memset (exm_data_path, 0, EXM_MAX_PATH_LEN);
+    snprintf (exm_data_path, EXM_MAX_PATH_LEN, "%s", p);
+  }
   omp_unset_nest_lock (&lock);
-  return s;
+  return p;
 }
+
 
 /* Lookup an address, returning NULL if the address is not found or a strdup
  * locally-allocated copy of the backing file path for the address. No guarantee
@@ -127,5 +120,3 @@ exm_lookup (void *addr)
   omp_unset_nest_lock (&lock);
   return f;
 }
-
-// XXX Also add a list all mappings function??

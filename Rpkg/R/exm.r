@@ -15,20 +15,14 @@ exm_threshold <- function(nbytes=0)
 }
 
 
-#' Set the exm temp file path
-#' @param pattern A valid path
+#' Set or retrieve the exm data file path
+#' @param path If missing, return the current data path. Otherwise set the
+#'   data path to the specified value.
 #' @export
-exm_set_path <- function(path="/tmp")
+exm_path <- function(path)
 {
-# XXX validate path first.
-  .Call("Rexm_set_path", as.character(path), PACKAGE="exm")
-}
-
-#' Return the exm template
-#' @export
-exm_get_template <- function()
-{
-  .Call("Rexm_get_template", PACKAGE="exm")
+  if(missing(path)) .Call("Rexm_get_path", PACKAGE="exm")
+  else .Call("Rexm_set_path", as.character(path), PACKAGE="exm")
 }
 
 #' Lookup the exm backing file for an object

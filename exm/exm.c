@@ -84,8 +84,7 @@ exm_init ()
 #endif
   if (READY < 0)
     {
-      snprintf (exm_fname_template, EXM_MAX_PATH_LEN, "%s/exm%ld_XXXXXX",
-                TMPDIR, (long int) getpid ());
+      snprintf (exm_data_path, EXM_MAX_PATH_LEN, "%s", TMPDIR);
       omp_init_nest_lock (&lock);
       READY = 1;
     }
@@ -101,25 +100,22 @@ exm_init ()
 static void
 exm_finalize ()
 {
-#if defined(DEBUG)
-  write(2, "Exm exm_finalize\n", 13);
-#endif
   struct map *m, *tmp;
   pid_t pid;
   omp_set_nest_lock (&lock);
   READY = 0;
   HASH_ITER (hh, flexmap, m, tmp)
   {
-    munmap (m->addr, m->length);
 #if defined(DEBUG) || defined(DEBUG1)
-    fprintf (stderr, "Exm unmap address %p of size %lu\n", m->addr,
+    fprintf (stderr, "Exm finalize unmap address %p of size %lu\n", m->addr,
              (unsigned long int) m->length);
 #endif
+    munmap (m->addr, m->length);
     pid = getpid ();
     if (pid == m->pid)
       {
 #if defined(DEBUG) || defined(DEBUG1)
-        fprintf (stderr, "Exm ulink %s\n", m->path);
+        fprintf (stderr, "Exm finalize unlink %p:%s\n", m->addr, m->path);
 #endif
         unlink (m->path);
         HASH_DEL (flexmap, m);
@@ -137,6 +133,9 @@ exm_finalize ()
 void
 freemap (struct map *m)
 {
+#if defined(DEBUG) || defined(DEBUG1)
+  write(2, "Exm freemap\n", 12);
+#endif
   if (m)
     {
       if (m->path)
@@ -185,13 +184,15 @@ malloc (size_t size)
         return NULL;            // malloc failed, not ready
     }
 
-// If either size >= the threshold value and READY >= 1, or
-// we failed to malloc any size and READY >= 1, then try mmap.
+/* If either size >= the threshold value and READY >= 1, or
+ * we failed to malloc any size and READY >= 1, then try mmap.
+ */
   m = (struct map *) ((*exm_default_malloc) (sizeof (struct map)));
   m->path = (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
   memset (m->path, 0, EXM_MAX_PATH_LEN);
   omp_set_nest_lock (&lock);
-  strncpy (m->path, exm_fname_template, EXM_MAX_PATH_LEN);
+  snprintf (m->path, EXM_MAX_PATH_LEN, "%s/exm%ld_XXXXXX",
+              exm_data_path, (long int) getpid ());
   m->length = size;
   fd = mkostemp (m->path, O_RDWR | O_CREAT);
   j = ftruncate (fd, m->length);
@@ -244,7 +245,7 @@ free (void *ptr)
   if (READY > 0)
     {
 #ifdef DEBUG1
-      fprintf (stderr, "Exm free %p \n", ptr);
+      fprintf (stderr, "Exm free %p\n", ptr);
 #endif
       omp_set_nest_lock (&lock);
       HASH_FIND_PTR (flexmap, &ptr, m);
@@ -252,19 +253,22 @@ free (void *ptr)
  * by a parent.
  */
       pid = getpid ();
-      if (m && pid == m->pid)
+      if (m)
         {
 #if defined(DEBUG) || defined(DEBUG1)
-          fprintf (stderr, "Exm free unmap address %p of size %lu pid %ld\n", ptr,
-                   (unsigned long int) m->length, (long int) pid);
+          fprintf (stderr, "Exm free unmap address %p of size %lu pid %ld %ld\n", ptr,
+                   (unsigned long int) m->length, (long int) pid, (long int) m->pid);
 #endif
           munmap (ptr, m->length);
+          if (pid == m->pid)
+          {
 #if defined(DEBUG) || defined(DEBUG1)
-          fprintf (stderr, "Exm ulink %p/%s\n", ptr, m->path);
+            fprintf (stderr, "Exm free unlink %p:%s\n", ptr, m->path);
 #endif
-          unlink (m->path);
-          HASH_DEL (flexmap, m);
-          freemap (m);
+            unlink (m->path);
+            HASH_DEL (flexmap, m);
+            freemap (m);
+          }
           omp_unset_nest_lock (&lock);
           return;
         }
@@ -354,7 +358,8 @@ realloc (void *ptr, size_t size)
                 (struct map *) ((*exm_default_malloc) (sizeof (struct map)));
               m->path = (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
               memset (m->path, 0, EXM_MAX_PATH_LEN);
-              strncpy (m->path, exm_fname_template, EXM_MAX_PATH_LEN);
+              snprintf (m->path, EXM_MAX_PATH_LEN, "%s/exm%ld_XXXXXX",
+                          exm_data_path, (long int) getpid ());
               m->length = size;
               copylen = m->length;
               if (y->length < copylen)
@@ -374,7 +379,7 @@ realloc (void *ptr, size_t size)
             }
           m->addr =
             mmap (NULL, m->length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-/* Here is a rather unfortunate child copy... XXX ADAPT THIS TO USE A COW MAP */
+/* Here is a rather unfortunate child copy... XXX use some kind of cow map? */
           if (child)
             exm_default_memcpy (m->addr, y->addr, copylen);
           m->pid = getpid ();

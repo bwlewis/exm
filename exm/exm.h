@@ -16,13 +16,8 @@ struct map
 };
 
 /* These global values can be changed using the basic API defined in api.c. */
-extern char exm_fname_template[];
+extern char exm_data_path[];
 extern size_t exm_threshold;
-
-/* The exm_offset global can be set by the api. It affects memcpy by
- * searching for keys offset from the given memcpy address.
- */
-extern int exm_offset;
 
 /* The global variable flexmap is a key-value list of addresses (keys) and file
  * paths (values). The recursive OpenMP lock is used widely in the library and
