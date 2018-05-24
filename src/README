@@ -33,3 +33,11 @@ messages to stderr and the system log.
 
 See api.c for a list of API functions. There is no library per se, function
 symbols need to be looked up by the calling program. See test.c for examples.
+
+
+# License
+
+Copyright 2013 by Michael Kane and Bryan lewis under the BSD 2-Clause copyright
+license, see https://opensource.org/licenses/BSD-2-Clause. This software uses
+uthash copyrighted by Troy D. Hansen licensed under a revised BSD license, see
+the file LICENSE.uthash.

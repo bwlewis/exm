@@ -440,11 +440,11 @@ reallocf (void *ptr, size_t size)
 #endif
 
 
-/* A exm-aware memcpy.
+/* exm-aware memcpy.
  *
  * It turns out, at least on Linux, that memcpy on memory-mapped files is much
  * slower than simply copying the data with read and write--and much, much
- * slower than zero (user space) copy techniques using sendfile.
+ * slower than sendfile.
  *
  * This is a placeholder for a future memcpy that detects when copies are
  * made between exm-allocated regions. At the moment, this only handles
