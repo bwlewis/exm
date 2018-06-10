@@ -138,6 +138,14 @@ exm_finalize ()
 #endif
 }
 
+int
+addr_sort (struct map *a, struct map *b)
+{
+  int j = 0;
+  if(a->addr < b->addr) j = -1;
+  else if(a->addr > b->addr) j = 1;
+  return j;
+}
 
 /* freemap is a utility function that deallocates the supplied map structure */
 void
@@ -236,7 +244,8 @@ malloc (size_t size)
     }
   else
     {
-      HASH_ADD_PTR (flexmap, addr, m);
+//      HASH_ADD_PTR (flexmap, addr, m);
+      HASH_ADD_INORDER (hh, flexmap, addr, sizeof(void *), m, addr_sort);
     }
 #if defined(DEBUG) || defined(DEBUG1)
   syslog (LOG_DEBUG, "hash count = %u\n", HASH_COUNT (flexmap));
@@ -403,7 +412,8 @@ realloc (void *ptr, size_t size)
               munmap (m->addr, m->length);
               goto bail;
             }
-          HASH_ADD_PTR (flexmap, addr, m);
+//          HASH_ADD_PTR (flexmap, addr, m);
+          HASH_ADD_INORDER (hh, flexmap, addr, sizeof(void *), m, addr_sort);
           x = m->addr;
           close (fd);
 #if defined(DEBUG) || defined(DEBUG1)
@@ -444,11 +454,14 @@ reallocf (void *ptr, size_t size)
  *
  * It turns out, at least on Linux, that memcpy on memory-mapped files is much
  * slower than simply copying the data with read and write--and much, much
- * slower than sendfile.
+ * slower than sendfile (which performs the copy with kernel routines only).
  *
  * This is a placeholder for a future memcpy that detects when copies are
  * made between exm-allocated regions. At the moment, this only handles
- * full region copies.
+ * the easy case of full region copies.
+ *
+ * XXX Once this is finished, then WRITE ME:
+ * memccpy, memmove, strncpy, wmemcpy
  */
 void *
 memcpy (void *dest, const void *src, size_t n)
@@ -470,7 +483,7 @@ memcpy (void *dest, const void *src, size_t n)
       omp_unset_nest_lock (&lock);
       return (*exm_default_memcpy) (dest, src, n);
     }
-  if (SRC->length != n || DEST->length != n)
+  if (SRC->length != n || DEST->length < n)
     {
       omp_unset_nest_lock (&lock);
       return (*exm_default_memcpy) (dest, src, n);
@@ -479,7 +492,7 @@ memcpy (void *dest, const void *src, size_t n)
   syslog (LOG_DEBUG, "memcopy address %p src_addr %p of size %lu\n",
           SRC->addr, src, (unsigned long int) SRC->length);
 #endif
-/*  Consider replacing with a layered copy on write approach?  */
+/*  Consider replacing with a copy on write approach?  XXX */
   src_fd = open (SRC->path, O_RDONLY);
   dest_fd = open (DEST->path, O_RDWR);
   omp_unset_nest_lock (&lock);

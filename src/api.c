@@ -119,3 +119,18 @@ exm_lookup (void *addr)
   omp_unset_nest_lock (&lock);
   return f;
 }
+
+/* Debugging function that iterates over hash table, printing entries
+ * to stderr in order.
+ */
+void
+exm_debug_list ()
+{
+  struct map *m, *tmp;
+  omp_set_nest_lock (&lock);
+  HASH_ITER (hh, flexmap, m, tmp)
+  {
+    fprintf(stderr, "%p, %lu, %s\n", m->addr, m->length, m->path);
+  }
+  omp_unset_nest_lock (&lock);
+}

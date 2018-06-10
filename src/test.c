@@ -28,10 +28,12 @@ main (int argc, void **argv)
   const char *y = "Cazart!";
   char *path;
   size_t SIZE = 1000000;
+  void *x1, *x2, *x3;
 
   size_t (*set_threshold) (size_t);
   int (*exm_madvise) (void *, int);
   char *(*exm_path) (char *);
+  void (*exm_debug_list) (void);
   void *handle;
   handle = dlopen (NULL, RTLD_LAZY);
   if (!handle)
@@ -41,6 +43,8 @@ main (int argc, void **argv)
   exm_madvise = (int (*)(void *, int)) dlsym (handle, "exm_madvise");
   check_error ();
   exm_path = (char *(*)(char *)) dlsym (handle, "exm_path");
+  check_error ();
+  exm_debug_list = (void (*)(void)) dlsym (handle, "exm_debug_list");
   check_error ();
   dlclose (handle);
 
@@ -88,6 +92,17 @@ main (int argc, void **argv)
   memcpy (x, (const void *) y, strlen (y));
   free (x);
 
+
+  printf ("> exm_debug_list()\n");
+  x1 = malloc (SIZE + 1);
+  x2 = malloc (SIZE + 1);
+  x3 = malloc (SIZE + 1);
+  exm_debug_list();
+  free (x1);
+  free (x2);
+  free (x3);
+
+
   printf ("> malloc above threshold + fork\n");
   x = malloc (SIZE + 1);
   memcpy (x, (const void *) y, strlen (y));
@@ -101,9 +116,9 @@ main (int argc, void **argv)
     }
   sleep (1);
 //  kill (p, SIGTERM);  // commented out part: a leak. finalize not run when
-//  process is terminated by a signal (gcc destructor) XXX.
+//  process is terminated by a signal (gcc destructor skipped) XXX.
 // XXX conversely, if the parent deletes the backing data file/mmap
-// then the child will populate then what? -- see below
+// the child will populate then what? -- see below
   sprintf (x, "parent");
   printf ("> hello from %s process address %p\n", (char *) x, x);
   free (x);
