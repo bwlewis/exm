@@ -111,19 +111,25 @@ main (int argc, void **argv)
     {
       sprintf (x, "child");
       printf ("> hello from %s process address %p\n", (char *) x, x);
-//      sleep (2);
+      free (x); // unmaps in child, but can't unlink because parent
+      x = malloc (SIZE + 1); // XXX A LEAK
+      sprintf (x, "child");
+      printf ("> hello again from %s process address %p\n", (char *) x, x);
+//      free(x); // avoids the leak, but would be nice to get working destructor
+      sleep (2);
       exit (0);
     }
   sleep (1);
-//  kill (p, SIGTERM);  // commented out part: a leak. finalize not run when
-//  process is terminated by a signal (gcc destructor skipped) XXX.
-// XXX conversely, if the parent deletes the backing data file/mmap
-// the child will populate then what? -- see below
+  kill (p, SIGTERM);
+// XXX The allocation in the child leaks above because finalize not run when
+// process is terminated by a signal (gcc destructor skipped).
+// TODO: FIX ME
   sprintf (x, "parent");
   printf ("> hello from %s process address %p\n", (char *) x, x);
   free (x);
   wait (0);
 
+// What happens when the parent frees an allocation referenced by a child?
   printf ("> malloc above threshold + fork test 2\n");
   x = malloc (SIZE + 1);
   memcpy (x, (const void *) y, strlen (y));
@@ -131,13 +137,13 @@ main (int argc, void **argv)
   if (p == 0)                   // child
     {
       sleep (2);
-      sprintf (x, "child");
+      sprintf (x, "child"); // XXX why no segfault here?
       printf ("> hello from %s process address %p\n", (char *) x, x);
       exit (0);
     }
   sprintf (x, "parent");
   printf ("> hello from %s process address %p\n", (char *) x, x);
-  free (x);
+  free (x); // free x while child still references it
   wait (0);
 
   printf ("> test OK\n");
