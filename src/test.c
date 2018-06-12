@@ -129,6 +129,10 @@ main (int argc, void **argv)
   free (x);
   wait (0);
 
+
+// This test is just as above but using a shared writable map between
+// parent and child (note that the value printed out in the parent
+// is written by the child).
   printf ("> malloc above threshold + shared writable map fork (%d)\n", exm_cow(0));
   x = malloc (SIZE + 1);
   memcpy (x, (const void *) y, strlen (y));
