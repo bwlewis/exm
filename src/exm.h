@@ -18,6 +18,7 @@ struct map
 /* These global values can be changed using the basic API defined in api.c. */
 extern char exm_data_path[];
 extern size_t exm_alloc_threshold;
+extern int exm_child_cow;
 
 /* The global variable flexmap is a key-value list of addresses (keys) and file
  * paths (values). The recursive OpenMP lock is used widely in the library and

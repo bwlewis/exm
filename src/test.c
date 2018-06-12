@@ -25,7 +25,7 @@ main (int argc, void **argv)
 {
   int j;
   void *x;
-  const char *y = "Cazart!";
+  const char *y = "parent";
   char *path;
   size_t SIZE = 1000000;
   void *x1, *x2, *x3;
@@ -121,11 +121,10 @@ main (int argc, void **argv)
     }
   sleep (1);
   kill (p, SIGTERM);
-// XXX The allocation in the child leaks above because finalize not run when
-// process is terminated by a signal (gcc destructor skipped).
-// TODO: FIX ME
-  sprintf (x, "parent");
-  printf ("> hello from %s process address %p\n", (char *) x, x);
+// The allocation in the child leaks above because finalize not run when
+// process is terminated by a signal with no registered handler
+// Also illustrate that child writes are COW.
+  printf ("> hello from parent process address %p, value: %s\n", x, (char *) x);
   free (x);
   wait (0);
 

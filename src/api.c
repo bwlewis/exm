@@ -18,6 +18,7 @@
 /* exm_path is initialized in exm.c:exm_init() */
 char exm_data_path[EXM_MAX_PATH_LEN];
 size_t exm_alloc_threshold = 2000000000;
+int exm_child_cow = 1;
 
 /* The next functions allow applications to inspect and change default
  * settings. The application must dynamically locate them with dlsym after

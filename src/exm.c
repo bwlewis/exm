@@ -39,6 +39,8 @@ static void *(*exm_default_valloc) (size_t);
 static void *(*exm_default_realloc) (void *, size_t);
 static void *(*exm_default_memcpy) (void *dest, const void *src, size_t n);
 
+static pid_t (*exm_default_fork) (void);
+
 static void *uthash_malloc_ (size_t);
 static void uthash_free_ (void *);
 void freemap (struct map *);
@@ -94,6 +96,14 @@ exm_init ()
           if (errno == 0)
             exm_alloc_threshold = (size_t) _threshold;
         }
+      char *EXM_CHILD_COW = getenv ("EXM_CHILD_COW");
+      if (EXM_CHILD_COW != NULL)
+        {
+          errno = 0;
+          long _child_cow = strtol(EXM_CHILD_COW, &endptr, 10);
+          if (errno == 0)
+            exm_child_cow = (int) _child_cow;
+        }
     }
   if (!exm_hook)
     exm_hook = __libc_malloc;
@@ -142,8 +152,10 @@ int
 addr_sort (struct map *a, struct map *b)
 {
   int j = 0;
-  if(a->addr < b->addr) j = -1;
-  else if(a->addr > b->addr) j = 1;
+  if (a->addr < b->addr)
+    j = -1;
+  else if (a->addr > b->addr)
+    j = 1;
   return j;
 }
 
@@ -245,7 +257,7 @@ malloc (size_t size)
   else
     {
 //      HASH_ADD_PTR (flexmap, addr, m);
-      HASH_ADD_INORDER (hh, flexmap, addr, sizeof(void *), m, addr_sort);
+      HASH_ADD_INORDER (hh, flexmap, addr, sizeof (void *), m, addr_sort);
     }
 #if defined(DEBUG) || defined(DEBUG1)
   syslog (LOG_DEBUG, "hash count = %u\n", HASH_COUNT (flexmap));
@@ -413,7 +425,7 @@ realloc (void *ptr, size_t size)
               goto bail;
             }
 //          HASH_ADD_PTR (flexmap, addr, m);
-          HASH_ADD_INORDER (hh, flexmap, addr, sizeof(void *), m, addr_sort);
+          HASH_ADD_INORDER (hh, flexmap, addr, sizeof (void *), m, addr_sort);
           x = m->addr;
           close (fd);
 #if defined(DEBUG) || defined(DEBUG1)
@@ -526,4 +538,55 @@ calloc (size_t count, size_t size)
   x = exm_hook (n);             //, NULL);
   memset (x, 0, n);
   return x;
+}
+
+/* Optionally convert child process mappings to copy on write MAP_PRIVATE */
+pid_t
+fork (void)
+{
+  pid_t p;
+  if (!exm_default_fork)
+    exm_default_fork = (pid_t (*)(void)) dlsym (RTLD_NEXT, "fork");
+  p = exm_default_fork ();
+  if(!exm_child_cow) return p;
+  if (p == 0)
+    {
+      struct map *m, *tmp, *remap, *x;
+      int fd;
+      pid_t q = getpid ();
+      omp_set_nest_lock (&lock);
+      HASH_ITER (hh, flexmap, m, tmp)
+      {
+        if (q != m->pid)
+          {
+            fd = open (m->path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+            if (fd >= 0)
+              {
+                remap =
+                  (struct map
+                   *) ((*exm_default_malloc) (sizeof (struct map)));
+                remap->path =
+                  (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
+                memset (remap->path, 0, EXM_MAX_PATH_LEN);
+                remap->addr = mmap (m->addr, m->length, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_PRIVATE, fd, 0);
+                syslog (LOG_DEBUG,
+                        "fork (child) debug m->addr %p, remap->addr %p",
+                        m->addr, remap->addr);
+                snprintf (remap->path, EXM_MAX_PATH_LEN, "%s", m->path);
+                remap->length = m->length;
+                remap->pid = q;
+                HASH_REPLACE_INORDER (hh, flexmap, addr, sizeof (void *), remap, x, addr_sort);
+                syslog (LOG_DEBUG,
+                        "child remapping address %p as copy on write",
+                        x->addr);
+                freemap (x);
+              }
+            else
+              syslog (LOG_DEBUG, "warning: child unable to remap address %p",
+                      m->addr);
+          }
+      }
+      omp_unset_nest_lock (&lock);
+    }
+  return p;
 }
