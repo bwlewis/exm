@@ -32,6 +32,7 @@ main (int argc, void **argv)
 
   size_t (*set_threshold) (size_t);
   int (*exm_madvise) (void *, int);
+  int (*exm_cow) (int);
   char *(*exm_path) (char *);
   void (*exm_debug_list) (void);
   void *handle;
@@ -41,6 +42,8 @@ main (int argc, void **argv)
   set_threshold = (size_t (*)(size_t)) dlsym (handle, "exm_threshold");
   check_error ();
   exm_madvise = (int (*)(void *, int)) dlsym (handle, "exm_madvise");
+  check_error ();
+  exm_cow = (int (*)(int)) dlsym (handle, "exm_cow");
   check_error ();
   exm_path = (char *(*)(char *)) dlsym (handle, "exm_path");
   check_error ();
@@ -103,7 +106,7 @@ main (int argc, void **argv)
   free (x3);
 
 
-  printf ("> malloc above threshold + fork\n");
+  printf ("> malloc above threshold + copy on write fork\n");
   x = malloc (SIZE + 1);
   memcpy (x, (const void *) y, strlen (y));
   pid_t p = fork ();
@@ -113,20 +116,37 @@ main (int argc, void **argv)
       printf ("> hello from %s process address %p\n", (char *) x, x);
       free (x); // unmaps in child, but can't unlink because parent
       x = malloc (SIZE + 1); // XXX A LEAK
-      sprintf (x, "child");
-      printf ("> hello again from %s process address %p\n", (char *) x, x);
-//      free(x); // avoids the leak, but would be nice to get working destructor
+      free(x); // avoids the leak, but would be nice to get working destructor
       sleep (2);
       exit (0);
     }
   sleep (1);
   kill (p, SIGTERM);
-// The allocation in the child leaks above because finalize not run when
-// process is terminated by a signal with no registered handler
-// Also illustrate that child writes are COW.
+// If you comment out free(x) above, then the allocation in the child leaks
+// above because finalize not run when process is terminated by a signal with
+// no registered handler.  Also illustrate that child writes are COW.
   printf ("> hello from parent process address %p, value: %s\n", x, (char *) x);
   free (x);
   wait (0);
+
+  printf ("> malloc above threshold + shared writable map fork (%d)\n", exm_cow(0));
+  x = malloc (SIZE + 1);
+  memcpy (x, (const void *) y, strlen (y));
+  p = fork ();
+  if (p == 0)                   // child
+    {
+      sprintf (x, "child");
+      printf ("> hello from %s process address %p\n", (char *) x, x);
+      free (x); // unmaps in child, but can't unlink because parent
+      sleep (2);
+      exit (0);
+    }
+  sleep (1);
+  kill (p, SIGTERM);
+  printf ("> hello from parent process address %p, value: %s\n", x, (char *) x);
+  free (x);
+  wait (0);
+
 
 // What happens when the parent frees an allocation referenced by a child?
   printf ("> malloc above threshold + fork test 2\n");

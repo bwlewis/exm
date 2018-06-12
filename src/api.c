@@ -30,6 +30,7 @@ int exm_child_cow = 1;
  * char * exm_path(char *path)
  * char * exm_lookup(void *addr)
  * int exm_madvise(void *addr, int advice)
+ * int exm_child_cow(int j)
  */
 
 /* Return the exm library version
@@ -42,11 +43,27 @@ exm_version (char *v)
   return EXM_VERSION;
 }
 
+/* Set exm_child_cow control.
+ * INPUT j: proposed new exm_child_cow value
+ * OUTPUT (return value): exm_child_cow value
+ * Set exm_child_cow to zero to share writeable mapping between parent and
+ * children processes via fork.  Otherwise set exm_child_cow != 0 to tell
+ * forked child processes to use a private copy on write mapping.
+ * Note that the copy on write mapping will stay in memory if written to!
+ */ 
+int
+exm_cow (int j)
+{
+  omp_set_nest_lock (&lock);
+  exm_child_cow = j;
+  omp_unset_nest_lock (&lock);
+  return exm_child_cow;
+}
+
 /* Set and get threshold size.
  * INPUT
  * j: proposed new exm_threshold size
- * OUTPUT
- * (return value): exm_threshold size on exit
+ * OUTPUT (return value): exm_threshold size
  */
 size_t
 exm_threshold (size_t j)
