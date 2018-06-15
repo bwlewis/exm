@@ -161,12 +161,52 @@ addr_sort (struct map *a, struct map *b)
   return j;
 }
 
+/* simple utility wrapper for sendfile */
+ssize_t
+sendfile_loop (int out_fd, int in_fd, size_t count)
+{
+  ssize_t s, total = 0;
+#ifdef __linux__
+  off_t offset = 0;
+  while (offset < count)
+    {
+      s = sendfile (out_fd, in_fd, &offset, count);
+      if (s < 0)
+        {
+          syslog (LOG_CRIT, "sendfile error");
+          break;
+        }
+      total = total + s;
+    }
+#else
+#define CHUNK 262144
+  char buf[CHUNK];
+  while (total < count)
+    {
+      s = read (in_fd, buf, CHUNK);
+      if (s < 0)
+        {
+          syslog (LOG_CRIT, "file copy read error");
+          break;
+        }
+      s = write (out_fd, buf, (size_t) s);
+      if (s < 0)
+        {
+          syslog (LOG_CRIT, "file copy write error");
+          break;
+        }
+      total = total + s;
+    }
+#endif
+  return total;
+}
+
 /* freemap is a utility function that deallocates the supplied map structure */
 void
 freemap (struct map *m)
 {
 #if defined(DEBUG) || defined(DEBUG1)
-  syslog (LOG_DEBUG, "freemap\n");
+  syslog (LOG_DEBUG, "freemap");
 #endif
   if (m)
     {
@@ -548,11 +588,10 @@ memcpy (void *dest, const void *src, size_t n)
   syslog (LOG_DEBUG, "memcopy address %p src_addr %p of size %lu\n",
           SRC->addr, src, (unsigned long int) SRC->length);
 #endif
-/*  Consider replacing with a copy on write approach?  XXX */
   src_fd = open (SRC->path, O_RDONLY);
   dest_fd = open (DEST->path, O_RDWR);
   omp_unset_nest_lock (&lock);
-  sendfile (dest_fd, src_fd, 0, n);     // XXX how to handle error?
+  sendfile_loop (dest_fd, src_fd, n);
   close (dest_fd);
   close (src_fd);
   return dest;
@@ -574,7 +613,7 @@ fork (void)
   if (exm_child_cow <= 0 || p > 0)
     return p;
 
-  /* following run only by forked child ... */
+  /* forked child code follows ... */
   struct map *m, *tmp, *remap, *x;
   int fd = 0;
   pid_t q = getpid ();
@@ -598,7 +637,7 @@ fork (void)
             syslog (LOG_DEBUG, "child copying backing file for %p (%s -> %s)",
                     m->addr, m->path, remap->path);
 #endif
-            sendfile (fd, src_fd, 0, m->length);        // XXX how to handle error?
+            sendfile_loop (fd, src_fd, m->length);
             close (src_fd);
             break;
           default:

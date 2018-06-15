@@ -14,6 +14,35 @@ exm_threshold <- function(nbytes=0)
   .Call("Rexm_threshold", as.numeric(nbytes), PACKAGE="exm")
 }
 
+#' Set and return the exm fork copy on write behavior.
+#'
+#' Control how forked child processes see memory defined by the parent process.
+#' The default value is 'copy on write' which behaves similarly to the usual
+#' (non-exm) fork behavior--writes to memory regions by child processes are
+#' stored in RAM by each child process page by page using a copy on write
+#' method. Alternatively, use 'duplicate' if you expect a forked child process
+#' to make lots of changes that could exceed available system RAM. The
+#' 'duplicate' option copies out of core backing files and sets up new
+#' memory mappings in the child process--it incurs start up overhead. The
+#' 'shared' option gives shared read/write, out of core access to parent and child
+#' processes. However, it should be avoided as it can lead to memory corruption
+#' between processes due to unexpected modification of R objects.
+#'
+#' @param value copy on write setting
+#' @examples
+#' # Make children duplicate memory
+#' \dontrun{
+#' exm_cow("duplicate")
+#' }
+#' @export
+exm_cow <- function(value=c("copy on write", "shared", "duplicate"))
+{
+  value <- match.arg(value)
+  api <- c("shared"=0, "copy on write"=1, "duplicate"=2)
+  api[.Call("Rexm_cow", as.integer(api[value]), PACKAGE="exm") + 1]
+}
+
+
 #' Set or retrieve the exm data file path
 #' @param path If missing, return the current data path. Otherwise set the
 #'   data path to the specified value.

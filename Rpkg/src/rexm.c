@@ -5,6 +5,33 @@
 #include <Rinternals.h>
 
 /*
+ * exm_cow
+ * INPUT J SEXP   INTEGER cow value
+ * OUTPUT  SEXP   Returned cow value
+ */
+SEXP
+Rexm_cow (SEXP J)
+{
+  int j = *(INTEGER(J));
+  void *handle;
+  int (*exm_cow)(int);
+  char *derror;
+  handle = dlopen (NULL, RTLD_LAZY);
+  if (!handle) {
+      error ("%s\n", dlerror ());
+      return R_NilValue;
+  }
+  dlerror ();
+  exm_cow = (int (*)(int))dlsym(handle, "exm_cow");
+  if ((derror = dlerror ()) != NULL)  {
+      error ("%s\n", dlerror ());
+      return R_NilValue;
+  }
+  dlclose (handle);
+  return ScalarInteger((int) (*exm_cow)(j));
+}
+
+/*
  * exm_threshold
  * INPUT J SEXP   Threshold value or R_NilValue
  * OUTPUT  SEXP   Threshold set point or R_NilValue on error
