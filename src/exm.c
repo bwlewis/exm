@@ -471,6 +471,35 @@ reallocf (void *ptr, size_t size)
 #endif
 
 
+/* calloc is a special case.  dlsym ultimately calls calloc, thus a direct
+ * interposition here results in an infinite loop...We created a fake calloc
+ * that relies on malloc, and we avoid use of dlsym by using the special glibc
+ * __libc_malloc. This works, but requires glibc!  We should not need to do
+ * this on BSD/OS X.
+ */
+void *
+calloc (size_t count, size_t size)
+{
+  void *x;
+  size_t n = count * size;
+  if (READY > 0 && n > exm_alloc_threshold)
+    {
+#if defined(DEBUG) || defined(DEBUG1)
+      syslog (LOG_DEBUG, "calloc...handing off to exm malloc\n");
+#endif
+      return malloc (n);
+    }
+  if (!exm_hook)
+    exm_init ();
+  x = exm_hook (n);             //, NULL);
+  memset (x, 0, n);
+  return x;
+}
+
+
+
+
+
 /* exm-aware memcpy.
  *
  * It turns out, at least on Linux, that memcpy on memory-mapped files is much
@@ -483,6 +512,9 @@ reallocf (void *ptr, size_t size)
  *
  * XXX Once this is finished, then WRITE ME:
  * memccpy, memmove, strncpy, wmemcpy
+ *
+ * XXX See below for a proposed fork COW API. Follow the same rules for
+ * XXX memcpy? Or perhaps similar rules?
  */
 void *
 memcpy (void *dest, const void *src, size_t n)
@@ -524,41 +556,15 @@ memcpy (void *dest, const void *src, size_t n)
 }
 
 
-/* calloc is a special case.  dlsym ultimately calls calloc, thus a direct
- * interposition here results in an infinite loop...We created a fake calloc
- * that relies on malloc, and we avoid use of dlsym by using the special glibc
- * __libc_malloc. This works, but requires glibc!  We should not need to do
- * this on BSD/OS X.
- */
-void *
-calloc (size_t count, size_t size)
-{
-  void *x;
-  size_t n = count * size;
-  if (READY > 0 && n > exm_alloc_threshold)
-    {
-#if defined(DEBUG) || defined(DEBUG1)
-      syslog (LOG_DEBUG, "calloc...handing off to exm malloc\n");
-#endif
-      return malloc (n);
-    }
-  if (!exm_hook)
-    exm_init ();
-  x = exm_hook (n);             //, NULL);
-  memset (x, 0, n);
-  return x;
-}
-
 
 /* Optionally convert child process mappings to copy on write MAP_PRIVATE */
-// XXX XXX Consider adding a third possibility, copy the backing file and set up
-// a new map at the same address. Not clean that MAP_FIXED can always do this!
-// For instance, perhaps:
-// exm_child_cow = 0   MAP_PRIVATE (in-core COW populated as written to)
-// exm_child_cow = 1   copied map (MAP_SHARED, but distinct)
-// exm_child_cow > 1   MAP_SHARED
-// maybe someday have an option to remap the same file in a new VFS copy on
-// write layer like aufs or whatever. This gives an out of core COW.
+// XXX XXX fork/cow API not stable yet
+// Propose:
+// exm_child_cow <= 0   MAP_SHARED
+// exm_child_cow  = 1   MAP_PRIVATE (in-core COW populated as written to, default)
+// exm_child_cow  = 2   map copy of original (MAP_SHARED, but copied)
+// exm_child_cow  = 3   out of core COW, reserved for future
+// exm_child_cow  > 3   reserved
 // XXX
 pid_t
 fork (void)
@@ -567,7 +573,7 @@ fork (void)
   if (!exm_default_fork)
     exm_default_fork = (pid_t (*)(void)) dlsym (RTLD_NEXT, "fork");
   p = exm_default_fork ();
-  if (!exm_child_cow || p > 0)
+  if (exm_child_cow <= 0 || p > 0)
     return p;
 
   /* following run only by forked child ... */
