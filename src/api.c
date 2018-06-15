@@ -34,8 +34,7 @@ int exm_child_cow = 1;
  */
 
 /* Return the exm library version
- * OUTPUT
- * (return value): double version major.minor
+ * OUTPUT (return value): double version major.minor
  */
 double
 exm_version (char *v)
@@ -46,10 +45,18 @@ exm_version (char *v)
 /* Set exm_child_cow control.
  * INPUT j: proposed new exm_child_cow value
  * OUTPUT (return value): exm_child_cow value
- * Set exm_child_cow to zero to share writeable mapping between parent and
- * children processes via fork.  Otherwise set exm_child_cow != 0 to tell
- * forked child processes to use a private copy on write mapping.
- * Note that the copy on write mapping will stay in memory if written to!
+ * exm_child_cow <= 0   MAP_SHARED parent/child shared writable map
+ * exm_child_cow  = 1   MAP_PRIVATE (in-core COW populated as written to, default)
+ * exm_child_cow  = 2   map copy of backing file (MAP_SHARED, but on a private copy)
+ * exm_child_cow  = 3   reserved for proposed future out of core COW
+ * exm_child_cow  > 3   reserved
+ *
+ * exm_child_cow = 1 is the deafult. This is an _in-core_ copy on write image.
+ * Data written in the child populate RAM one page at a time as written to
+ * (and stay in RAM).
+ *
+ * exm_child_cow = 2 first fully copies the backing file in the child, then sets
+ * up an out of core mapping to that. The copy uses sendfile for speed.
  */ 
 int
 exm_cow (int j)
@@ -61,8 +68,7 @@ exm_cow (int j)
 }
 
 /* Set and get threshold size.
- * INPUT
- * j: proposed new exm_threshold size
+ * INPUT j: proposed new exm_threshold size
  * OUTPUT (return value): exm_threshold size
  */
 size_t

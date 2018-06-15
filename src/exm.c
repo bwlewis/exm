@@ -152,7 +152,8 @@ int
 addr_sort (struct map *a, struct map *b)
 {
   int j = 0;
-  if (a->addr == NULL || b->addr == NULL) return j;
+  if (a->addr == NULL || b->addr == NULL)
+    return j;
   if (a->addr < b->addr)
     j = -1;
   else if (a->addr > b->addr)
@@ -559,15 +560,10 @@ memcpy (void *dest, const void *src, size_t n)
 
 
 
-/* Optionally convert child process mappings to copy on write MAP_PRIVATE */
-// XXX XXX fork/cow API not stable yet
-// Propose:
-// exm_child_cow <= 0   MAP_SHARED
-// exm_child_cow  = 1   MAP_PRIVATE (in-core COW populated as written to, default)
-// exm_child_cow  = 2   map copy of original (MAP_SHARED, but copied)
-// exm_child_cow  = 3   reserved for proposed future out of core COW
-// exm_child_cow  > 3   reserved
-// XXX
+/* Optionally convert child process mappings to copy on write MAP_PRIVATE
+ * or other variations including a fully copied backing file. See the api.c
+ * for reference (depends on the exm_child_cow setting).
+ */
 pid_t
 fork (void)
 {
@@ -580,23 +576,54 @@ fork (void)
 
   /* following run only by forked child ... */
   struct map *m, *tmp, *remap, *x;
-  int fd;
+  int fd = 0;
   pid_t q = getpid ();
   omp_set_nest_lock (&lock);
   HASH_ITER (hh, flexmap, m, tmp)
   {
     if (q != m->pid)
       {
-        remap =
-          (struct map *) ((*exm_default_malloc) (sizeof (struct map)));
+        remap = (struct map *) ((*exm_default_malloc) (sizeof (struct map)));
         remap->path = (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
         memset (remap->path, 0, EXM_MAX_PATH_LEN);
-        fd = open (m->path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+
+        switch (exm_child_cow)
+          {
+          case 2:
+            snprintf (remap->path, EXM_MAX_PATH_LEN, "%s/exm%ld_XXXXXX",
+                      exm_data_path, (long int) getpid ());
+            fd = mkostemp (remap->path, O_RDWR | O_CREAT);
+            int src_fd = open (m->path, O_RDWR, S_IRUSR | S_IWUSR);     // check error XXX
+            syslog (LOG_DEBUG, "child copying backing file for %p (%s -> %s)", m->addr, m->path, remap->path);
+            sendfile (fd, src_fd, 0, m->length);        // XXX how to handle error?
+            close (src_fd);
+            break;
+          default:
+            fd = open (m->path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+            break;
+          }
         if (fd >= 0)
           {
-            remap->addr =
-              mmap (m->addr, m->length, PROT_READ | PROT_WRITE,
-                    MAP_FIXED | MAP_PRIVATE, fd, 0);
+            switch (exm_child_cow)
+              {
+              case 2:
+                remap->addr =
+                  mmap (m->addr, m->length, PROT_READ | PROT_WRITE,
+                        MAP_FIXED | MAP_PRIVATE, fd, 0);
+                  syslog (LOG_DEBUG,
+                          "child remapping address %p on private copy",
+                          m->addr);
+                break;
+              default:
+                remap->addr =
+                  mmap (m->addr, m->length, PROT_READ | PROT_WRITE,
+                        MAP_FIXED | MAP_SHARED, fd, 0);
+                  syslog (LOG_DEBUG,
+                          "child remapping address %p as copy on write",
+                          m->addr);
+                break;
+              }
+
             if (remap->addr == MAP_FAILED)
               {
                 syslog (LOG_CRIT, "fork (child) remap failure %p\n", m->addr);
@@ -608,15 +635,13 @@ fork (void)
                 remap->pid = q;
                 HASH_REPLACE_INORDER (hh, flexmap, addr, sizeof (void *),
                                       remap, x, addr_sort);
-                syslog (LOG_DEBUG,
-                        "child remapping address %p as copy on write",
-                        x->addr);
-                if (x != NULL) freemap (x);
+                if (x != NULL)
+                  freemap (x);
               }
-              close (fd);
+            close (fd);
           }
         else
-          syslog (LOG_DEBUG, "warning: child unable to remap address %p",
+          syslog (LOG_CRIT, "warning: child unable to remap address %p",
                   m->addr);
         freemap (remap);
       }
