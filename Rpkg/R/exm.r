@@ -14,7 +14,6 @@ exm_threshold <- function(nbytes=0)
   .Call("Rexm_threshold", as.numeric(nbytes), PACKAGE="exm")
 }
 
-
 #' Set or retrieve the exm data file path
 #' @param path If missing, return the current data path. Otherwise set the
 #'   data path to the specified value.

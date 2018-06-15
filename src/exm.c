@@ -62,9 +62,9 @@ static int READY = -1;
  * space. The library provides a basic API that lets programs change the
  * mapping file path and threshold value.
  *
- * Be cautious when debugging about placement of printf, write, etc. These
- * things often end up re-entering one of our functions. The general rule here
- * is to keep things as minimal as possible.
+ * Be cautious using any library function in this code, they often end up
+ * re-entering one of our functions. The general rule here is to keep things
+ * as minimal as possible in here.
  */
 
 /* Exm initialization
@@ -152,6 +152,7 @@ int
 addr_sort (struct map *a, struct map *b)
 {
   int j = 0;
+  if (a->addr == NULL || b->addr == NULL) return j;
   if (a->addr < b->addr)
     j = -1;
   else if (a->addr > b->addr)
@@ -389,7 +390,8 @@ realloc (void *ptr, size_t size)
             {
 /* Uh oh. We're in a child process. We need to copy this mapping and create a
  * new map entry unique to the child.  Also  need to copy old data up to min
- * (size, m->length), this sucks.
+ * (size, m->length). This can only happen if exm_child_cow = 0, see fork
+ * below.
  */
               y = m;
               child = 1;
@@ -563,7 +565,7 @@ memcpy (void *dest, const void *src, size_t n)
 // exm_child_cow <= 0   MAP_SHARED
 // exm_child_cow  = 1   MAP_PRIVATE (in-core COW populated as written to, default)
 // exm_child_cow  = 2   map copy of original (MAP_SHARED, but copied)
-// exm_child_cow  = 3   out of core COW, reserved for future
+// exm_child_cow  = 3   reserved for proposed future out of core COW
 // exm_child_cow  > 3   reserved
 // XXX
 pid_t
