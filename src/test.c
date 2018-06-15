@@ -23,7 +23,7 @@ check_error ()
 int
 main (int argc, void **argv)
 {
-  int j;
+  int j, status;
   void *x;
   const char *y = "parent";
   char *path;
@@ -129,6 +129,7 @@ main (int argc, void **argv)
   free (x);
   wait (0);
 
+
 // This test is just as above but using a shared writable map between
 // parent and child (note that the value printed out in the parent
 // is written by the child).
@@ -140,7 +141,7 @@ main (int argc, void **argv)
     {
       sprintf (x, "child");
       printf ("> hello from %s process address %p\n", (char *) x, x);
-      free (x); // unmaps in child, but can't unlink because parent
+      free (x);
       sleep (2);
       exit (0);
     }

@@ -594,7 +594,10 @@ fork (void)
                       exm_data_path, (long int) getpid ());
             fd = mkostemp (remap->path, O_RDWR | O_CREAT);
             int src_fd = open (m->path, O_RDWR, S_IRUSR | S_IWUSR);     // check error XXX
-            syslog (LOG_DEBUG, "child copying backing file for %p (%s -> %s)", m->addr, m->path, remap->path);
+#if defined(DEBUG) || defined(DEBUG1)
+            syslog (LOG_DEBUG, "child copying backing file for %p (%s -> %s)",
+                    m->addr, m->path, remap->path);
+#endif
             sendfile (fd, src_fd, 0, m->length);        // XXX how to handle error?
             close (src_fd);
             break;
@@ -609,24 +612,29 @@ fork (void)
               case 2:
                 remap->addr =
                   mmap (m->addr, m->length, PROT_READ | PROT_WRITE,
-                        MAP_FIXED | MAP_PRIVATE, fd, 0);
-                  syslog (LOG_DEBUG,
-                          "child remapping address %p on private copy",
-                          m->addr);
+                        MAP_FIXED | MAP_SHARED, fd, 0);
+#if defined(DEBUG) || defined(DEBUG1)
+                syslog (LOG_DEBUG,
+                        "child remapping address %p on private copy",
+                        m->addr);
+#endif
                 break;
               default:
                 remap->addr =
                   mmap (m->addr, m->length, PROT_READ | PROT_WRITE,
-                        MAP_FIXED | MAP_SHARED, fd, 0);
-                  syslog (LOG_DEBUG,
-                          "child remapping address %p as copy on write",
-                          m->addr);
+                        MAP_FIXED | MAP_PRIVATE, fd, 0);
+#if defined(DEBUG) || defined(DEBUG1)
+                syslog (LOG_DEBUG,
+                        "child remapping address %p as copy on write",
+                        m->addr);
+#endif
                 break;
               }
+            close (fd);
 
             if (remap->addr == MAP_FAILED)
               {
-                syslog (LOG_CRIT, "fork (child) remap failure %p\n", m->addr);
+                syslog (LOG_CRIT, "fork (child) remap failure %p", m->addr);
               }
             else
               {
@@ -635,15 +643,19 @@ fork (void)
                 remap->pid = q;
                 HASH_REPLACE_INORDER (hh, flexmap, addr, sizeof (void *),
                                       remap, x, addr_sort);
+#if defined(DEBUG) || defined(DEBUG1)
+                syslog (LOG_DEBUG, "child replaced map %p", x->addr);
+#endif
                 if (x != NULL)
                   freemap (x);
               }
-            close (fd);
           }
         else
-          syslog (LOG_CRIT, "warning: child unable to remap address %p",
-                  m->addr);
-        freemap (remap);
+          {
+            syslog (LOG_CRIT, "warning: child unable to remap address %p",
+                    m->addr);
+            freemap (remap);
+          }
       }
   }
   omp_unset_nest_lock (&lock);
