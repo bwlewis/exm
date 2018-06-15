@@ -567,7 +567,7 @@ fork (void)
   if (!exm_default_fork)
     exm_default_fork = (pid_t (*)(void)) dlsym (RTLD_NEXT, "fork");
   p = exm_default_fork ();
-  if (!exm_child_cow || p > 1)
+  if (!exm_child_cow || p > 0)
     return p;
 
   /* following run only by forked child ... */
@@ -579,27 +579,22 @@ fork (void)
   {
     if (q != m->pid)
       {
+        remap =
+          (struct map *) ((*exm_default_malloc) (sizeof (struct map)));
+        remap->path = (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
+        memset (remap->path, 0, EXM_MAX_PATH_LEN);
         fd = open (m->path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd >= 0)
           {
-            remap =
-              (struct map *) ((*exm_default_malloc) (sizeof (struct map)));
-            remap->path = (char *) ((*exm_default_malloc) (EXM_MAX_PATH_LEN));
-            memset (remap->path, 0, EXM_MAX_PATH_LEN);
             remap->addr =
               mmap (m->addr, m->length, PROT_READ | PROT_WRITE,
                     MAP_FIXED | MAP_PRIVATE, fd, 0);
             if (remap->addr == MAP_FAILED)
               {
                 syslog (LOG_CRIT, "fork (child) remap failure %p\n", m->addr);
-                close (fd);
-                freemap (remap);
               }
             else
               {
-                syslog (LOG_DEBUG,
-                        "fork (child) debug m->addr %p, remap->addr %p",
-                        m->addr, remap->addr);
                 snprintf (remap->path, EXM_MAX_PATH_LEN, "%s", m->path);
                 remap->length = m->length;
                 remap->pid = q;
@@ -608,13 +603,14 @@ fork (void)
                 syslog (LOG_DEBUG,
                         "child remapping address %p as copy on write",
                         x->addr);
-                freemap (x);
-                close (fd);
+                if (x != NULL) freemap (x);
               }
+              close (fd);
           }
         else
           syslog (LOG_DEBUG, "warning: child unable to remap address %p",
                   m->addr);
+        freemap (remap);
       }
   }
   omp_unset_nest_lock (&lock);
