@@ -26,8 +26,8 @@ f = function()
 }
 f()
 
-# cf. This variation which copies the _whole_ vector in each child
-# (note the tracemem reports).
+# Compare with this more standard approach which copies the _whole_ vector in
+# each child (note the tracemem reports).
 f = function()
 {
   x = rep(0.0, 1e6)
