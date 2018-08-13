@@ -6,11 +6,11 @@
                      
 ```
 
-Easy eXtended Memory
+EXtra Memory
 
-Exm provides utilities to selectively override the memory allocator,
-allowing users to create out-of-core data structures that may be much
-larger than available RAM.
+Exm provides utilities to selectively override the memory allocator, allowing
+users to create out-of-core data objects that may be much larger than available
+RAM.
 
 
 ## Description
@@ -23,12 +23,12 @@ that can be used by programs to dynamically fine tune allocation details.
 
 Use exm with, for instance, a fast NVME flash device. Exm complements Linux
 system swap and works best together with swap.  Linux swap efficiently manages
-situations in which lots of smaller allocations exceed available memory, while
-exm efficiently handles large allocations.
+situations where lots of smaller allocations exceed available memory, while exm
+efficiently handles large allocations.
 
 Multiple processes using exm, including forked child processes, may use private
-copy on write mappings (the default), or optionally shared writable mappings or
-duplicated private mappings.
+copy on write mappings (the default), or optionally shared writable mappings
+(perilous), or duplicated private mappings.
 
 ## Requirements
 
