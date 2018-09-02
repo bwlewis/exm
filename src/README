@@ -7,8 +7,6 @@
 ```
 
 Use the EXM_HOME environment variable to set the path to the libexm.so library.
-Exm defaults to using the TMPDIR environment variable to store data.  Use the
-exm_path API function to dynamically change the data path.
 Quick example:
 
 ```
@@ -28,6 +26,10 @@ Optionally `make CFLAGS=-DDEBUG` to enable basic log messages to stderr and the
 system log.  Optionally `make CFLAGS=-DDEBUG1` to enable more verbose log
 messages to stderr and the system log.
 
+Exm defaults to using the TMPDIR environment variable to store data.  Use the
+TMPDIR variable or the exm_path API function to dynamically change the data
+path.
+
 
 # API Documentation
 
@@ -37,7 +39,7 @@ symbols need to be looked up by the calling program. See test.c for examples.
 Important parameters can be set by environment variables:
 
 TMPDIR         temporary file directory (for allocations)
-EXM_THRESHOLD  allocation threshold in bytes (default=2e9)
+EXM_THRESHOLD  allocation threshold in bytes (default=2147483648 aka 2GB)
 EXM_CHILD_COW  forked process memory sharing control (integer), default=1
                <= 0 means MAP_SHARED parent/child shared writable map
                1    means MAP_PRIVATE (in-core child COW)

@@ -18,7 +18,7 @@ RAM.
 Exm is a simple tool for out-of-core (OOC) computing.  It is launched as a
 command line utility, taking an application as an argument. All memory
 allocations larger than a specified threshold are memory-mapped to a file.  Exm
-aims to be both process- and thread-safe. It includes an optional, simple API
+aims to be forked process- and thread-safe. It includes an optional, simple API
 that can be used by programs to dynamically fine tune allocation details.
 
 Use exm with, for instance, a fast NVME flash device. Exm complements Linux
@@ -28,7 +28,7 @@ efficiently handles large allocations.
 
 Multiple processes using exm, including forked child processes, may use private
 copy on write mappings (the default), or optionally shared writable mappings
-(perilous), or duplicated private mappings.
+(perilous), or duplicated mappings.
 
 ## Requirements
 
@@ -60,6 +60,9 @@ are disk-based in TMPDIR:
 ```bash
 EXM_THRESHOLD=<bytes> exm <program> [program arguments]
 ```
+
+See the README file in the exm src directory for more details.
+
 
 # The R exm package
 
