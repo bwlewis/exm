@@ -61,6 +61,11 @@ are disk-based in TMPDIR:
 EXM_THRESHOLD=<bytes> exm <program> [program arguments]
 ```
 
+Similarly, set the TMPDIR path for storing large allocations:
+```bash
+TMPDIR=<path to fast ssd> EXM_THRESHOLD=<bytes> exm <program> [program arguments]
+```
+
 See the README file in the exm src directory for more details.
 
 
