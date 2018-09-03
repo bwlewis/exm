@@ -82,13 +82,19 @@ static int READY = -1;
 static void
 exm_init ()
 {
+  char *endptr, *EXM_CHILD_COW, *EXM_THRESHOLD, *EXM_TMPDIR;
   if (READY < 0)
     {
-      snprintf (exm_data_path, EXM_MAX_PATH_LEN, "%s", TMPDIR);
       omp_init_nest_lock (&lock);
       READY = 1;
       openlog ("exm", LOG_PERROR | LOG_PID, LOG_USER);
-      char *endptr, *EXM_THRESHOLD = getenv ("EXM_THRESHOLD");
+      EXM_TMPDIR = getenv ("TMPDIR");
+      if( EXM_TMPDIR != NULL)
+        {
+          snprintf (exm_data_path, EXM_MAX_PATH_LEN, "%s", EXM_TMPDIR);
+        }
+      else snprintf (exm_data_path, EXM_MAX_PATH_LEN, "%s", TMPDIR);
+      EXM_THRESHOLD = getenv ("EXM_THRESHOLD");
       if (EXM_THRESHOLD != NULL)
         {
           errno = 0;
@@ -96,7 +102,7 @@ exm_init ()
           if (errno == 0)
             exm_alloc_threshold = (size_t) _threshold;
         }
-      char *EXM_CHILD_COW = getenv ("EXM_CHILD_COW");
+      EXM_CHILD_COW = getenv ("EXM_CHILD_COW");
       if (EXM_CHILD_COW != NULL)
         {
           errno = 0;
