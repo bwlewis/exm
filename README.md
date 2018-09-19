@@ -14,9 +14,13 @@ RAM.
 
 ## Warning
 
-This is experimental software and might be unstable. We've found a serious
-performance problem when used together with the superb OpenBLAS numeric
-library...still trying to figure that out.
+This is experimental software and might be unstable. In particular, there
+are some unaccounted for performance issues with OpenMP-based multithreaded
+applications (for instance, programs linked to OpenMP BLAS libraries).
+
+There can also be a lot of page fault overhead with our approach. Recent
+versions of Linux swap might perform better in many cases, but we're working
+on that.
 
 
 ## Description
