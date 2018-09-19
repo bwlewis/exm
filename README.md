@@ -12,6 +12,9 @@ Exm provides utilities to selectively override the memory allocator, allowing
 users to create out-of-core data objects that may be much larger than available
 RAM.
 
+Here is a link to a short talk for the Cleveland R meetup:
+<a href="https://bwlewis.github.io/exm">https://bwlewis.github.io/exm</a>
+
 ## Warning
 
 This is experimental software and might be unstable. In particular, there
