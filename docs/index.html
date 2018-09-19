@@ -1,0 +1,247 @@
+<html>
+<title>exm -- Bryan W Lewis</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="./w3.css">
+<style>
+@media print {
+.mySlides { 
+    page-break-before: always;
+  }
+}
+</style>
+<body style="margin: 80px;">
+<div class="w3-content w3-display-container">
+
+
+
+<div class="mySlides" style="width:100%">
+<center>
+<pre style="font-family: courier; font-size: 64pt;">
+  ___  _  ______ ___ 
+ / _ \| |/ / __ `__ \
+/  __/&gt;  &lt;/ / / / / /
+\___/_/|_/_/ /_/ /_/ 
+</pre>
+
+<br/>
+  <div style="font-family: arial; font-size: 50pt; font-wieght: 1800;">
+<b>EX</b>tra <b>M</b>emory
+<br/><br/><br/>
+Mike Kane and Bryan W. Lewis, September 2018
+</div>
+</center>
+</div>
+
+<div class="mySlides" style="width:100%">
+<br/> <br/> <br/> <br/> <br/>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+Kyle from Progressive at our R meetup earlier in 2018:
+<br/><br/>
+<blockquote style="font-style: italic;">
+Some folks still like SAS because many methods can work on arbitrarily large data&mdash;maybe slowly, but they work.
+<br/><br/>
+R is fundamentally an in-memory computing environment.
+</blockquote>
+  </div>
+</div>
+
+
+<div class="mySlides" style="width:100%">
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+<br/>
+Out of core computing in R...
+<br/><br/>
+<ul>
+<li> ff -Adler and Oehlschl&auml;gel
+<li> bigmemory/bigalgebra (only matrices) -Kane and Emerson
+<li> biglm/bigglm -Lumley
+<li> iotools -Urbanek
+<li> manual chunking Map/Reduce, foreach, etc.
+<li> dplyr/sparklyr/... (external processing)
+</ul>
+...and probably many others.
+  </div>
+</div>
+
+<div class="mySlides" style="width:100%">
+<br/><br/>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+These specialized approaches require you to adapt to them.
+<br/><br/><br/><br/>
+The benefit is great performance is sometimes possible.
+<br/><br/><br/><br/>
+The problem is that things <b>don't "just work."</b> Many analyses can be tricky and very hard to implement! (Especially with packages using compiled code.)
+  </div>
+</div>
+
+<div class="mySlides" style="width:100%">
+<br/><br/><br/><br/>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+Out of core getting interesting thanks to very fast, low-latency SSD and Optane storage media today.
+  </div>
+</div>
+
+<div class="mySlides" style="width:100%">
+<br/><br/>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+Well, what about kernel swap to storage media?
+<ul>
+<li> page-based, with attempts to map sequential pages together
+<li> global in operation and can adversely affect entire OS
+<li> works remarkably well in general
+</ul>
+  </div>
+</div>
+
+<div class="mySlides" style="width:100%">
+<br/><br/>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+exm - a custom memory allocator that maps large allocations to files
+<ul>
+<li> allocation- and page-fault based, always maintains sequential page order
+<li> paging behavior tunable using <i>madvise</i>
+<li> local operation specific to individual programs<br/>(doesn't muck up rest of OS)
+<li> dynamic allocations (swap is too, kinda)
+<li> transparent to applications (like swap)
+</ul>
+<br/><br/>
+Started way back in 2005, sat for a long time. Dusting it off again.
+  </div>
+</div>
+
+<div class="mySlides" style="width:100%">
+<br/><br/>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+Best together:
+<br/>
+<br/>
+swap for handling lots of small allocations
+<br/>
+exm for handling large allocations
+<br/><br/>
+swap + exm <b>"just works"</b>
+  </div>
+</div>
+
+
+<div class="mySlides" style="width:100%">
+<br/><br/>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+exm simple command-line, C and R-package API:
+<ul>
+<li> where to allocate   <i>exm_path()</i>
+<li> allocation threshold <i>exm_threshold()</i>
+<li> control fork behavior (share/copy-on-write<sup>*</sup>/duplicate)
+<li> <i>tracemem()</i>-like stuff...
+</ul>
+<br/><br/>
+<sup>*</sup>Copy in-core on write only for now.
+<br/>
+Linux-only for now.
+  </div>
+</div>
+
+<div class="mySlides" style="width:100%">
+  <div style="font-family: courier; font-size: 40pt; font-wieght: 1800;">
+<pre>
+exm R --quiet
+&gt; library(exm)
+&gt; exm_threshold(1e8)
+&gt;  system.time({x = matrix(runif(2000000 * 1000),
+                   ncol=1000)})
+   user  system elapsed
+ 59.968  31.284 107.004
+&gt; object.size(x)
+16000000200 bytes
+&gt; system.time({q = qr(x)})
+     user    system   elapsed
+ 5403.564  3669.676 14393.603
+</pre>
+  </div>
+<div style="font-family: arial; font-size: 20pt; font-wieght: 1800;">
+Tested on my old home PC with a single AMD A10-7850K with 4 cores,
+16 GB DDR4 RAM, NVME-attached 250GB Samsung SSD 850 EVO drive.
+(*) figures from an HP ProLiant DL580 G7 w/1TB RAM and OMP_NUM_CORES=4.
+Both using Ubuntu + OpenBLAS.
+</div>
+</div>
+
+
+<div class="mySlides" style="width:100%">
+<br/><br/>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+<a href="https://github.com/bwlewis/exm">https://github.com/bwlewis/exm</a>
+  </div>
+</div>
+
+
+<div class="mySlides" style="width:100%">
+<br/><br/>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+<a href="https://github.com/bwlewis/exm">https://github.com/bwlewis/exm</a>
+  </div>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+<br/><br/>
+One more thing...this works for <b><i>anything</i></b>  (not just R).
+  </div>
+</div>
+
+
+<div class="mySlides" style="width:100%">
+<br/><br/>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+<a href="https://github.com/bwlewis/exm">https://github.com/bwlewis/exm</a>
+  </div>
+  <div style="font-family: arial; font-size: 40pt; font-wieght: 1800;">
+<br/><br/>
+One more thing...this works for <b><i>anything</i></b>  (not just R).
+<br/><br/><br/>
+One more even crazier thing...
+<br/><br/>distributed virtual shared memory with shim:
+<br/>
+<a href="https://github.com/bwlewis/shim">https://github.com/bwlewis/shim</a>
+<br/><br/>
+(This project started as a way to define and allocate into virtual DSM over
+Linux clusters using PVFS2.)
+  </div>
+</div>
+
+
+
+<!--END OF SLIDES-->
+</div>
+<div style="position:fixed; bottom: 20px;">
+  <button class="w3-button w3-white w3-display-left" onclick="plusDivs(-1)">&#10094;</button>
+  <button class="w3-button w3-white w3-display-right" onclick="plusDivs(1)">&#10095;</button>
+</div>
+
+<script>
+var slideIndex = 1;
+document.addEventListener("keydown", ki, false);
+
+function ki(e) {
+  var keyCode = e.keyCode;
+  if(keyCode==39) {
+    plusDivs(1);
+  }
+  if(keyCode==37) {
+    plusDivs(-1);
+  }
+}
+showDivs(slideIndex);
+
+function plusDivs(n) {
+  showDivs(slideIndex += n);
+}
+
+function showDivs(n) {
+  var i;
+  var x = document.getElementsByClassName("mySlides");
+  if (n > x.length) {slideIndex = 1}    
+  if (n < 1) {slideIndex = x.length}
+  for (i = 0; i < x.length; i++) {
+     x[i].style.display = "none";  
+  }
+  x[slideIndex-1].style.display = "block";  
+}
+</script>
