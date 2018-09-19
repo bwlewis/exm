@@ -12,6 +12,12 @@ Exm provides utilities to selectively override the memory allocator, allowing
 users to create out-of-core data objects that may be much larger than available
 RAM.
 
+## Warning
+
+This is experimental software and might be unstable. We've found a serious
+performance problem when used together with the superb OpenBLAS numeric
+library...still trying to figure that out.
+
 
 ## Description
 
