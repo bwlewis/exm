@@ -25,6 +25,9 @@ There can also be a lot of page fault overhead with our approach. Recent
 versions of Linux swap might perform better in many cases, but we're working
 on that.
 
+This project is related in spirit to
+<a href="http://pmem.io/pmdk/manpages/linux/master/libvmmalloc/libvmmalloc.7.html">http://pmem.io/pmdk/manpages/linux/master/libvmmalloc/libvmmalloc.7.html</a>
+ but exm is much older. The newer persistent-memory approaches are really interesting!
 
 ## Description
 
